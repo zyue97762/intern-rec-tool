@@ -24,11 +24,6 @@ with st.sidebar:
     api_key = st.text_input("请输入你的 DeepSeek API Key", type="password")
     model_choice = "deepseek-chat"  # 默认使用 deepseek 模型
 
-# 简单的授权逻辑（你可以自己改这个密码）
-# if auth_code != "2024intern":
-#     st.warning("请在侧边栏输入正确的授权码以解锁功能。")
-#     st.stop()
-
 # 修改后（使用代号）：
 if auth_code != st.secrets["MY_AUTH_CODE"]:
     st.warning("请在侧边栏输入正确的授权码以解锁功能。")
