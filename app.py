@@ -7,8 +7,8 @@ import re
 from docx import Document
 from docx.shared import Pt
 import io
-import time  # 必须导入
-# ... 其他导入保持不变 ...
+import time
+from streamlit_gsheets import GSheetsConnection
 
 # --- 新增：带指数退避的重试函数 ---
 def call_ai_with_retry(client, model, messages, max_retries=3, delay=2):
@@ -166,19 +166,28 @@ with st.sidebar:
 # 初始化 AI 客户端
 client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
 
-# --- 4. 功能一：精准匹配 (含硬筛选与全字段推送) ---
+# --- 4. 功能一：精准匹配 (已改为云端同步) ---
 st.header("📅 第一步：岗位匹配")
 
-col_up1, col_up2 = st.columns(2)
-with col_up1:
-    job_file = st.file_uploader("1. 上传岗位 Excel 表", type=["xlsx"])
-with col_up2:
-    cv_file = st.file_uploader("2. 上传你的简历 (PDF)", type=["pdf"])
+# 建立连接 (会自动去 Secrets 里找 credentials)
+conn = st.connection("gsheets", type=GSheetsConnection)
 
-if job_file and cv_file:
-    # 加载数据
-    df = pd.read_excel(job_file)
+# 这里填入你 Google Sheet 的完整 URL 链接
+# 比如 https://docs.google.com/spreadsheets/d/xxxxx/edit
+SQL_SHEET_URL = "https://docs.google.com/spreadsheets/d/1ruw9DOVcIO-QbKb841Hbtg_BC_btUA2n/edit?gid=294214781#gid=294214781"
+# 尝试自动读取
+try:
+    # 只读取第一张工作表，设置 ttl=600 表示每 10 分钟缓存一次，减少 API 调用
+    df = conn.read(spreadsheet=SQL_SHEET_URL, ttl=600)
+    st.success("✅ 岗位库已从云端实时同步")
+except Exception as e:
+    st.error(f"无法同步云端岗位库，请检查 Secrets 配置。错误详情: {e}")
+    st.stop()
 
+# 现在只需要上传简历了，岗位表不需要手动传了
+cv_file = st.file_uploader("2. 上传你的简历 (PDF)", type=["pdf"])
+
+if cv_file:
     # 筛选 UI 界面
     st.subheader("🔍 岗位精准筛选")
     c1, c2, c3 = st.columns(3)
@@ -469,9 +478,7 @@ if st.button("🪄 启动专家级精修"):
                  - 必须针对原始经历中的模糊动词（如“负责、处理、协助”）进行追问。
                  - 提问应引导用户回忆：具体的金额、具体的件数、具体的工具使用频率。
                  - 列出 3-5 个针对原始事实的细节追问
-
                 ---
-
                 
                 """
 
