@@ -1,5 +1,6 @@
 streamlit
 pandas
-openai
 pdfplumber
+openai
+python-docx
 openpyxl
