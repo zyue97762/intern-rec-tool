@@ -174,7 +174,7 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 
 # 这里填入你 Google Sheet 的完整 URL 链接
 # 比如 https://docs.google.com/spreadsheets/d/xxxxx/edit
-SQL_SHEET_URL = "https://docs.google.com/spreadsheets/d/1ruw9DOVcIO-QbKb841Hbtg_BC_btUA2n/edit?gid=294214781#gid=294214781"
+SQL_SHEET_URL = "https://docs.google.com/spreadsheets/d/1L_wOUawDLGHIpKfMre0ZTooxY0kXE9kncd_vbuKdXw0/edit?gid=294214781#gid=294214781"
 # 尝试自动读取
 try:
     # 只读取第一张工作表，设置 ttl=600 表示每 10 分钟缓存一次，减少 API 调用
