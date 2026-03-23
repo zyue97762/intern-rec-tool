@@ -472,7 +472,7 @@ if st.button("🪄 启动专家级精修"):
             if refined_data:
                 status.write("📝 正在生成全局求职策略建议...")
                 all_refined = "\n".join(list(refined_data.values()))
-                summary_prompt = f"针对以下精修后的内容...(此处省略内容)..."
+                summary_prompt = f"针对以下精修后的内容，总结核心竞争力、面试建议并写一段100字自我评价：\n{all_refined[:2000]}"
 
                 try:
                     # 确保在 try 块内进行 AI 调用
