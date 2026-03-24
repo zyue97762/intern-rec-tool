@@ -17,13 +17,18 @@ from streamlit_gsheets import GSheetsConnection
 def apply_custom_design():
     st.markdown("""
     <style>
-    /* 1. 消除空旷感：精简容器宽度，增加径向渐变背景 */
+    /* 1. 消除紧凑感：大幅释放容器宽度，增加质感背景 */
     .main {
         background: radial-gradient(circle at top right, #FDFCFE, #F1F5F9) !important;
         font-family: 'Segoe UI', Roboto, sans-serif;
     }
     .block-container {
-        max-width: 1100px !important; /* 缩小宽度让内容更聚焦 */
+        /* 将宽度拉大到全屏的 95% */
+        max-width: 95% !important; 
+        /* 在超大屏上封顶，保持阅读舒适 */
+        max-width: 1600px !important; 
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
         padding-top: 1.5rem !important;
         padding-bottom: 5rem !important;
     }
@@ -98,27 +103,34 @@ def apply_custom_design():
 
 # --- 1. 页面基本配置 ---
 st.set_page_config(page_title=" 暑期实习求职利器", layout="wide", initial_sidebar_state="expanded")
-# --- 新增：Hero Section (视觉锚点) ---
-st.markdown("""
+# --- 修改为：Hero Section (图片背景) ---
+st.markdown(f"""
     <div style="
-        background: linear-gradient(100deg, #6366F1 0%, #A855F7 100%);
-        padding: 45px;
+        /* 使用你的图片链接 */
+        background-image: url('https://plus.unsplash.com/premium_photo-1750755961214-5f0c04c8e4a4?q=80&w=1205&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+        /* 关键：让图片铺满且居中，并设置一个优雅的颜色叠加 */
+        background-size: cover;
+        background-position: center;
+        /* 在图片上叠加一层深色渐变，确保白色文字清晰 */
+        background-image: linear-gradient(135deg, rgba(99, 102, 241, 0.8) 0%, rgba(168, 85, 247, 0.9) 100%), url('https://plus.unsplash.com/premium_photo-1750755961214-5f0c04c8e4a4?q=80&w=1205&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+
+        padding: 55px;
         border-radius: 28px;
         color: white;
         margin-bottom: 30px;
-        box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.3);
+        box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.4);
         position: relative;
         overflow: hidden;
     ">
         <div style="position: relative; z-index: 1;">
-            <h1 style="color: white !important; margin: 0; font-size: 2.3rem; background: none; -webkit-text-fill-color: white; border: none; padding: 0;">
+            <h1 style="color: white !important; margin: 0; font-size: 2.5rem; background: none; -webkit-text-fill-color: white; border: none; padding: 0; font-weight: 800;">
                 嗨，未来的职场之星！🌟
             </h1>
-            <p style="font-size: 1.1rem; opacity: 0.95; margin-top: 12px; max-width: 650px; line-height: 1.6;">
+            <p style="font-size: 1.2rem; opacity: 0.95; margin-top: 15px; max-width: 700px; line-height: 1.6; font-weight: 500;">
                 大厂实习简历总是石沉大海？让我们用 AI 深度解析你的职场基因，把平庸的描述转化为让面试官眼前一亮的“必杀技”。
             </p>
         </div>
-        <div style="position: absolute; right: -30px; top: -30px; width: 180px; height: 180px; background: rgba(255,255,255,0.15); border-radius: 50%;"></div>
+        <div style="position: absolute; right: -50px; bottom: -50px; width: 250px; height: 250px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
     </div>
 """, unsafe_allow_html=True)
 st.title("🚀 暑期实习岗位精准匹配与优化工具")
