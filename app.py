@@ -17,108 +17,110 @@ from streamlit_gsheets import GSheetsConnection
 def apply_custom_design():
     st.markdown("""
     <style>
-    /* 1. 打造有质感的背景：淡灰蓝底色，衬托白色卡片 */
+    /* 1. 消除空旷感：精简容器宽度，增加径向渐变背景 */
     .main {
-        background-color: #F0F2F6 !important;
-        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        background: radial-gradient(circle at top right, #FDFCFE, #F1F5F9) !important;
+        font-family: 'Segoe UI', Roboto, sans-serif;
     }
-
-    /* 2. 隐藏默认的顶部多余空间 */
     .block-container {
-        padding-top: 2rem !important;
-        max-width: 1200px !important;
+        max-width: 1100px !important; /* 缩小宽度让内容更聚焦 */
+        padding-top: 1.5rem !important;
+        padding-bottom: 5rem !important;
     }
 
-    /* 3. 标题重构：更有冲击力的渐变与间距 */
+    /* 2. 标题与层级：增加视觉冲击力 */
     h1 {
-        color: #1E293B !important;
-        font-weight: 800 !important;
         background: linear-gradient(135deg, #6366F1 0%, #A855F7 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 2rem !important;
-        font-size: 2.8rem !important;
+        font-weight: 800 !important;
+        font-size: 2.5rem !important;
+        margin-bottom: 1rem !important;
     }
-
     h2, h3 {
         color: #334155 !important;
-        font-weight: 700 !important;
-        border-left: 5px solid #8B5CF6;
+        border-left: 6px solid #8B5CF6;
         padding-left: 15px !important;
-        margin-top: 2rem !important;
     }
 
-    /* 4. 卡片化布局：让每一个区域都像 App 里的组件 */
-    /* 针对 expander 和 所有的容器增加深度阴影和圆角 */
-    div[data-testid="stExpander"], .stDataFrame, div[data-testid="stVerticalBlock"] > div {
+    /* 3. 卡片系统：深度阴影与圆角，解决“平面感” */
+    div[data-testid="stExpander"], div[data-testid="stMetric"], .stDataFrame, div.stTabs {
         background-color: #FFFFFF !important;
-        border: none !important;
+        border: 1px solid rgba(226, 232, 240, 0.6) !important;
         border-radius: 20px !important;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
-        padding: 1rem;
+        box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.05) !important;
+        padding: 1.2rem !important;
         margin-bottom: 1.5rem !important;
     }
 
-    /* 针对数据表格的特殊美化 */
-    .stDataFrame {
-        padding: 0 !important; /* 让表格铺满圆角卡片 */
+    /* 4. 表格美化：消除 Excel 味 */
+    [data-testid="stDataFrame"] {
+        border: none !important;
+        background-color: #FAFAFB !important;
+        border-radius: 12px !important;
+        padding: 8px !important;
     }
 
-    /* 5. 侧边栏高级化：毛玻璃质感 */
-    [data-testid="stSidebar"] {
-        background-color: #FFFFFF !important;
-        border-right: 1px solid #E2E8F0 !important;
-        box-shadow: 5px 0 15px rgba(0,0,0,0.02);
-    }
-
-    /* 6. 按钮深度重构：不只是改颜色，还要改形状和反馈 */
+    /* 5. 按钮重构：动效反馈 */
     .stButton>button {
         width: 100% !important;
-        height: 3.5rem !important;
         border-radius: 14px !important;
         background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%) !important;
-        border: none !important;
         color: white !important;
-        font-size: 1.1rem !important;
         font-weight: 600 !important;
-        letter-spacing: 0.5px !important;
+        height: 3.2rem !important;
+        border: none !important;
         transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
+        box-shadow: 0 8px 15px rgba(99, 102, 241, 0.2) !important;
     }
-
     .stButton>button:hover {
-        transform: translateY(-3px) scale(1.02);
-        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4) !important;
+        transform: translateY(-3px);
+        box-shadow: 0 12px 20px rgba(99, 102, 241, 0.3) !important;
     }
 
-    /* 7. 输入框和滑块美化 */
-    input, textarea {
-        border-radius: 12px !important;
-        border: 1px solid #E2E8F0 !important;
-    }
-
-    /* 8. 标签页 (Tabs) 现代感 */
+    /* 6. 标签页 (Tabs) 现代感升级 */
     .stTabs [data-baseweb="tab-list"] {
         background-color: #F1F5F9;
-        border-radius: 12px;
+        border-radius: 14px;
         padding: 5px;
-        gap: 5px;
+        gap: 8px;
     }
     .stTabs [data-baseweb="tab"] {
-        border-radius: 8px;
-        padding: 8px 16px;
-        background-color: transparent;
+        border-radius: 10px;
+        padding: 8px 20px;
     }
     .stTabs [aria-selected="true"] {
         background-color: white !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
-        color: #8B5CF6 !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
 # --- 1. 页面基本配置 ---
 st.set_page_config(page_title=" 暑期实习求职利器", layout="wide", initial_sidebar_state="expanded")
+# --- 新增：Hero Section (视觉锚点) ---
+st.markdown("""
+    <div style="
+        background: linear-gradient(100deg, #6366F1 0%, #A855F7 100%);
+        padding: 45px;
+        border-radius: 28px;
+        color: white;
+        margin-bottom: 30px;
+        box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.3);
+        position: relative;
+        overflow: hidden;
+    ">
+        <div style="position: relative; z-index: 1;">
+            <h1 style="color: white !important; margin: 0; font-size: 2.3rem; background: none; -webkit-text-fill-color: white; border: none; padding: 0;">
+                嗨，未来的职场之星！🌟
+            </h1>
+            <p style="font-size: 1.1rem; opacity: 0.95; margin-top: 12px; max-width: 650px; line-height: 1.6;">
+                大厂实习简历总是石沉大海？让我们用 AI 深度解析你的职场基因，把平庸的描述转化为让面试官眼前一亮的“必杀技”。
+            </p>
+        </div>
+        <div style="position: absolute; right: -30px; top: -30px; width: 180px; height: 180px; background: rgba(255,255,255,0.15); border-radius: 50%;"></div>
+    </div>
+""", unsafe_allow_html=True)
 st.title("🚀 暑期实习岗位精准匹配与优化工具")
 apply_custom_design()  # 调用美容函数
 
@@ -808,3 +810,9 @@ if chat_input := st.chat_input("针对优化结果，你可以继续追问"):
 
             except Exception as e:
                 st.error(f"对话中断，请重试。错误信息：{e}")
+
+# 将筛选器放入一个 container 中，自动触发 CSS 卡片样式
+with st.container():
+    st.subheader("🔍 岗位精准筛选")
+    c1, c2, c3 = st.columns(3)
+    # ... 剩下的 multiselect 代码 ...
