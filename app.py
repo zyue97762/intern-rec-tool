@@ -103,22 +103,22 @@ def apply_custom_design():
 
 # --- 1. 页面基本配置 ---
 st.set_page_config(page_title=" 暑期实习求职利器", layout="wide", initial_sidebar_state="expanded")
-# --- 修改为：Hero Section (图片背景) ---
-st.markdown(f"""
+# --- 修改为：Hero Section (极光图形背景) ---
+st.markdown("""
     <div style="
-        /* 使用你的图片链接 */
-        background-image: url('https://plus.unsplash.com/premium_photo-1750755961214-5f0c04c8e4a4?q=80&w=1205&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
-        /* 关键：让图片铺满且居中，并设置一个优雅的颜色叠加 */
-        background-size: cover;
-        background-position: center;
-        /* 在图片上叠加一层深色渐变，确保白色文字清晰 */
-        background-image: linear-gradient(135deg, rgba(99, 102, 241, 0.8) 0%, rgba(168, 85, 247, 0.9) 100%), url('https://plus.unsplash.com/premium_photo-1750755961214-5f0c04c8e4a4?q=80&w=1205&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+        /* 使用分层渐变模拟极光图形效果 */
+        background: linear-gradient(135deg, #6366F1 0%, #A855F7 100%);
+        background-image: 
+            radial-gradient(at 10% 10%, rgba(255,255,255,0.15) 0px, transparent 50%),
+            radial-gradient(at 80% 90%, rgba(139, 92, 246, 0.3) 0px, transparent 50%),
+            radial-gradient(at 90% 10%, rgba(236, 72, 153, 0.2) 0px, transparent 50%),
+            linear-gradient(135deg, #6366F1 0%, #A855F7 100%);
 
         padding: 55px;
         border-radius: 28px;
         color: white;
         margin-bottom: 30px;
-        box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.4);
+        box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.3);
         position: relative;
         overflow: hidden;
     ">
