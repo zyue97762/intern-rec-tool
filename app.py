@@ -282,7 +282,7 @@ if cv_file:
     st.write(f"📊 筛选后符合要求的岗位：**{len(filtered_df)}** 个")
     st.dataframe(filtered_df.head(50), use_container_width=True)  # 预览前50条
 
-    if st.button("🔥 开始 AI 智能匹配"):
+    if st.button("🔥 开始 AI 智能匹配(消耗1额度)"):
         if filtered_df.empty:
             st.error("筛选后没有符合要求的岗位，请放宽筛选条件。")
         else:
@@ -431,7 +431,7 @@ target_jd = st.text_area("🎯 请贴入目标岗位要求 (JD)", height=150, pl
 
 
 # --- 修正后的“启动专家级精修”按钮逻辑 ---
-if st.button("🪄 启动专家级精修"):
+if st.button("🪄 启动专家级精修（消耗1额度）"):
     if not final_sections or not target_jd:
         st.error("请确保已输入简历内容和目标 JD")
     else:
@@ -619,7 +619,7 @@ st.info("💡 **小贴士**：优化建议中的 **[XX]** 是 AI 为你预留的
 st.divider()
 st.subheader("💬 简历精修对话室")
 # 温馨提示
-st.info("💡 **计费说明**：对话模式每次提问消耗 **0.5** 次额度（深度精修消耗 1 次）。")
+st.info("💡 **计费说明**：对话模式每次提问消耗 **0.5** 次额度。")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -630,42 +630,66 @@ for msg in st.session_state.messages:
         st.markdown(msg["content"])
 
 # 聊天输入框
-if chat_input := st.chat_input("针对优化结果，你可以继续追问（如：'帮我把这段写得更专业点'）"):
+if chat_input := st.chat_input("针对优化结果，你可以继续追问"):
 
-    # --- A. 余额检查 ---
-    # 直接从我们之前存在 session_state 里的用户信息判断
+    # 1. 检查余额 (保持不变)
     current_u = st.session_state.get("user_info")
     if current_u['Used_Count'] >= current_u['Total_Count']:
         st.warning("⚠️ 您的额度已耗尽，请联系管理员续费后再对话。")
         st.stop()
 
-    # --- B. 展示并记录用户消息 ---
+    # 2. 【核心修改】构建上下文背景
+    # 尝试从之前的步骤中抓取数据
+    context_info = ""
+
+    # 获取 JD
+    current_jd = target_jd if 'target_jd' in locals() else "未提供"
+
+    # 获取之前的精修建议
+    refined_summary = ""
+    if "refined_results" in st.session_state and st.session_state.refined_results:
+        res = st.session_state.refined_results
+        refined_summary = f"你之前给出的优化策略是：{res['final_summary']}\n"
+        # 也可以把各模块的精修点简要带入
+        for sec, content in res['refined_data'].items():
+            refined_summary += f"--- {sec} 模块优化建议 ---\n{content[:500]}...\n"
+
+    # 构建一个强大的 System Message
+    system_prompt = f"""你是一个资深简历优化专家。
+你正在协助用户进行简历修饰。以下是当前任务的背景信息，请务必基于这些信息回答用户的追问：
+
+【目标岗位 JD】：
+{current_jd}
+
+【之前的优化成果】：
+{refined_summary}
+
+请根据以上背景，结合用户的具体提问，给出针对性、专业且简洁的修改建议。"""
+
+    # 3. 展示并记录用户消息
     st.session_state.messages.append({"role": "user", "content": chat_input})
     with st.chat_message("user"):
         st.markdown(chat_input)
 
-    # --- C. AI 响应 ---
+    # 4. AI 响应
     with st.chat_message("assistant"):
         with st.spinner("专家正在思考中..."):
             try:
-                # 调用 AI
+                # 【核心修改】将 system_prompt 作为第一条消息发送
+                full_messages = [{"role": "system", "content": system_prompt}] + st.session_state.messages
+
                 response = call_ai_with_retry(
                     client,
                     "deepseek-chat",
-                    [{"role": "system",
-                      "content": "你是一个资深简历优化专家，请简明扼要地回答用户关于简历修改的提问。"}] + st.session_state.messages
+                    full_messages
                 )
                 ans = response.choices[0].message.content
                 st.markdown(ans)
 
-                # --- D. 成功后执行扣费 (0.5次) ---
+                # 5. 成功后执行扣费 (保持不变)
                 if deduct_usage(user_code, amount=0.5):
-                    # 右下角弹出一个小气泡提示，不干扰对话
-                    st.toast(
-                        f"已消耗 0.5 次额度，剩余 {current_u['Total_Count'] - st.session_state.user_info['Used_Count']} 次",
-                        icon="💰")
+                    st.toast(f"已消耗 0.5 次额度", icon="💰")
 
-                # 记录 AI 回复
                 st.session_state.messages.append({"role": "assistant", "content": ans})
 
             except Exception as e:
