@@ -373,7 +373,7 @@ if cv_file:
 
                     if deduct_usage(user_code, amount=1.0):
                         # 同步更新本地缓存，这样页面不需要重新读表也能显示正确的余额
-                        st.session_state.user_info['Used_Count'] += 1
+                        pass
                     st.success("✅ 匹配完成！已按匹配度降序排列(本次消耗 1 次额度)")
                     st.subheader("🎯 匹配结果推送 (含全字段信息)")
                     st.dataframe(final_df, use_container_width=True)
@@ -571,7 +571,7 @@ if st.button("🪄 启动专家级精修（消耗1额度）"):
 
             if deduct_usage(user_code, amount=1.0):
                 # 同步更新本地缓存，这样页面不需要重新读表也能显示正确的余额
-                st.session_state.user_info['Used_Count'] += 1
+                pass
             status.update(label="✅ 全量精修完成！（本次消耗1次额度）", state="complete", expanded=False)
 
         st.session_state.refined_results = {
