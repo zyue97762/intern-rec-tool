@@ -17,72 +17,109 @@ from streamlit_gsheets import GSheetsConnection
 def apply_custom_design():
     st.markdown("""
     <style>
-    /* 1. 页面整体背景与字体 */
+    /* 1. 打造有质感的背景：淡灰蓝底色，衬托白色卡片 */
     .main {
-        background: linear-gradient(180deg, #F9FAFB 0%, #FFFFFF 100%);
-        font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+        background-color: #F0F2F6 !important;
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
 
-    /* 2. 标题特效：青春渐变色 */
+    /* 2. 隐藏默认的顶部多余空间 */
+    .block-container {
+        padding-top: 2rem !important;
+        max-width: 1200px !important;
+    }
+
+    /* 3. 标题重构：更有冲击力的渐变与间距 */
     h1 {
-        background: linear-gradient(90deg, #8B5CF6 0%, #EC4899 100%);
+        color: #1E293B !important;
+        font-weight: 800 !important;
+        background: linear-gradient(135deg, #6366F1 0%, #A855F7 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-weight: 800 !important;
-        letter-spacing: -1px;
+        margin-bottom: 2rem !important;
+        font-size: 2.8rem !important;
     }
 
-    /* 3. 卡片式设计：美化 st.expander 和 容器 */
-    div[data-testid="stExpander"], div.stDataFrame {
-        border-radius: 15px !important;
-        border: 1px solid rgba(139, 92, 246, 0.1) !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
-        background-color: white !important;
+    h2, h3 {
+        color: #334155 !important;
+        font-weight: 700 !important;
+        border-left: 5px solid #8B5CF6;
+        padding-left: 15px !important;
+        margin-top: 2rem !important;
+    }
+
+    /* 4. 卡片化布局：让每一个区域都像 App 里的组件 */
+    /* 针对 expander 和 所有的容器增加深度阴影和圆角 */
+    div[data-testid="stExpander"], .stDataFrame, div[data-testid="stVerticalBlock"] > div {
+        background-color: #FFFFFF !important;
+        border: none !important;
+        border-radius: 20px !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+        padding: 1rem;
         margin-bottom: 1.5rem !important;
     }
 
-    /* 4. 按钮美化：增加呼吸感与悬停动画 */
-    .stButton>button {
-        border-radius: 12px !important;
-        background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%) !important;
-        color: white !important;
-        font-weight: 600 !important;
-        padding: 0.6rem 2rem !important;
-        border: none !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        box-shadow: 0 4px 14px 0 rgba(139, 92, 246, 0.39) !important;
-    }
-    .stButton>button:hover {
-        transform: translateY(-2px) scale(1.02);
-        box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5) !important;
+    /* 针对数据表格的特殊美化 */
+    .stDataFrame {
+        padding: 0 !important; /* 让表格铺满圆角卡片 */
     }
 
-    /* 5. 侧边栏优化 */
+    /* 5. 侧边栏高级化：毛玻璃质感 */
     [data-testid="stSidebar"] {
-        background-color: #FDFCFE !important;
-        border-right: 1px solid #F3F4F6;
+        background-color: #FFFFFF !important;
+        border-right: 1px solid #E2E8F0 !important;
+        box-shadow: 5px 0 15px rgba(0,0,0,0.02);
     }
 
-    /* 6. 标签页 (Tabs) 样式调整 */
+    /* 6. 按钮深度重构：不只是改颜色，还要改形状和反馈 */
+    .stButton>button {
+        width: 100% !important;
+        height: 3.5rem !important;
+        border-radius: 14px !important;
+        background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%) !important;
+        border: none !important;
+        color: white !important;
+        font-size: 1.1rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.5px !important;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
+    }
+
+    .stButton>button:hover {
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4) !important;
+    }
+
+    /* 7. 输入框和滑块美化 */
+    input, textarea {
+        border-radius: 12px !important;
+        border: 1px solid #E2E8F0 !important;
+    }
+
+    /* 8. 标签页 (Tabs) 现代感 */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
-        background-color: transparent;
+        background-color: #F1F5F9;
+        border-radius: 12px;
+        padding: 5px;
+        gap: 5px;
     }
     .stTabs [data-baseweb="tab"] {
-        height: 40px;
-        border-radius: 10px 10px 0 0;
-        background-color: #F3F4F6;
-        padding: 0 20px;
+        border-radius: 8px;
+        padding: 8px 16px;
+        background-color: transparent;
     }
     .stTabs [aria-selected="true"] {
-        background-color: #8B5CF6 !important;
-        color: white !important;
+        background-color: white !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+        color: #8B5CF6 !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
 # --- 1. 页面基本配置 ---
-st.set_page_config(page_title="暑期实习求职利器", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title=" 暑期实习求职利器", layout="wide", initial_sidebar_state="expanded")
+st.title("🚀 暑期实习岗位精准匹配与优化工具")
 apply_custom_design()  # 调用美容函数
 
 
