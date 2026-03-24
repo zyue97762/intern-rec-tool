@@ -49,21 +49,26 @@ def verify_user(license_key):
 
 
 def deduct_usage(license_key, amount=1.0):
-    """扣除使用额度，支持自定义分值（如 0.5）"""
     try:
         # 1. 实时读取最新数据
         user_df = conn.read(spreadsheet=SQL_SHEET_URL, worksheet="users", ttl=0)
+
+        # 【核心修复】强制将 Used_Count 列转为浮点数类型，防止赋值时被截断
+        user_df['Used_Count'] = user_df['Used_Count'].astype(float)
+
         idx = user_df[user_df['License_Key'] == license_key].index[0]
 
-        # 2. 计算新额度（转为 float 以支持 0.5）
+        # 2. 计算新额度
         current_used = float(user_df.at[idx, 'Used_Count'])
         new_used = current_used + amount
+
+        # 现在赋值给 float 类型的列，5.5 就不会变成 5 了
         user_df.at[idx, 'Used_Count'] = new_used
 
         # 3. 写回 Google Sheets
         conn.update(spreadsheet=SQL_SHEET_URL, worksheet="users", data=user_df)
 
-        # 4. 【关键】同步更新本地缓存，让侧边栏余额立即变化
+        # 4. 同步更新本地缓存
         if "user_info" in st.session_state:
             st.session_state.user_info['Used_Count'] = new_used
 
