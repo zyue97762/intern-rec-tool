@@ -10,6 +10,70 @@ import io
 import time
 from streamlit_gsheets import GSheetsConnection
 
+
+
+# 从 Secrets 获取关键配置
+try:
+    DEEPSEEK_API_KEY = st.secrets["DEEPSEEK_API_KEY"]
+    SQL_SHEET_URL = st.secrets["SQL_SHEET_URL"]
+except Exception as e:
+    st.error("❌ 缺失 Secrets 配置（DEEPSEEK_API_KEY 或 SQL_SHEET_URL）")
+    st.stop()
+
+# 建立 GSheets 连接
+conn = st.connection("gsheets", type=GSheetsConnection)
+
+
+# --- 2. 权限与计费核心函数 ---
+
+def verify_user(license_key):
+    """验证激活码：检查是否存在、是否激活、额度是否足够"""
+    try:
+        # 读取用户表 (ttl=0 保证实时获取最新额度)
+        user_df = conn.read(spreadsheet=SQL_SHEET_URL, worksheet="users", ttl=0)
+        user_data = user_df[user_df['License_Key'] == license_key]
+
+        if user_data.empty:
+            return None, "❌ 激活码无效"
+
+        user_info = user_data.iloc[0]
+        if user_info['Status'] != 'active':
+            return None, "🚫 该激活码已被禁用"
+
+        if user_info['Used_Count'] >= user_info['Total_Count']:
+            return None, "⚠️ 额度已用完，请联系管理员续费"
+
+        return user_info, "✅ 验证通过"
+    except Exception as e:
+        return None, f"校验出错: {e}"
+
+
+def deduct_usage(license_key, amount=1.0):
+    """扣除使用额度，支持自定义分值（如 0.5）"""
+    try:
+        # 1. 实时读取最新数据
+        user_df = conn.read(spreadsheet=SQL_SHEET_URL, worksheet="users", ttl=0)
+        idx = user_df[user_df['License_Key'] == license_key].index[0]
+
+        # 2. 计算新额度（转为 float 以支持 0.5）
+        current_used = float(user_df.at[idx, 'Used_Count'])
+        new_used = current_used + amount
+        user_df.at[idx, 'Used_Count'] = new_used
+
+        # 3. 写回 Google Sheets
+        conn.update(spreadsheet=SQL_SHEET_URL, worksheet="users", data=user_df)
+
+        # 4. 【关键】同步更新本地缓存，让侧边栏余额立即变化
+        if "user_info" in st.session_state:
+            st.session_state.user_info['Used_Count'] = new_used
+
+        return True
+    except Exception as e:
+        st.error(f"计费系统异常: {e}")
+        return False
+
+
+
 # --- 新增：带指数退避的重试函数 ---
 def call_ai_with_retry(client, model, messages, max_retries=3, delay=2):
     """
@@ -111,7 +175,7 @@ def split_resume_by_sections(text):
     return sections
 
 # --- 1. 页面基本配置 ---
-st.set_page_config(page_title="暑期实习求职利器", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title=" 暑期实习求职利器", layout="wide", initial_sidebar_state="expanded")
 st.title("🚀 暑期实习岗位精准匹配与优化工具")
 
 # --- 2. 隐私保护声明 ---
@@ -123,69 +187,68 @@ with st.expander("🛡️ 隐私保护与数据安全说明", expanded=False):
     3. **脱敏建议**：你可以删除简历中的手机号、住址等敏感信息，不影响 AI 评估。
     """)
 
-# --- 3. 侧边栏：授权与配置 ---
+# --- 3. 侧边栏：授权管理 ---
+
 with st.sidebar:
     st.header("🔑 访问授权")
-    # 优先从 Secrets 读取授权码，如果没有则需要手动输入（本地测试用）
-    try:
-        correct_auth_code = st.secrets["MY_AUTH_CODE"]
-    except:
-        correct_auth_code = "2024intern"  # 本地测试默认码
+    user_code = st.text_input("请输入您的专属激活码", type="password", help="联系管理员获取")
 
-    user_code = st.text_input("请输入授权码", type="password")
-
-    if user_code != correct_auth_code:
-        st.warning("请输入正确的授权码以解锁功能。")
+    if not user_code:
+        # 如果清空了输入框，也重置验证状态
+        if "user_info" in st.session_state:
+            del st.session_state.user_info
+        st.info("💡 请输入激活码以解锁简历优化功能。")
         st.stop()
 
-    st.success("授权成功！")
-    st.divider()
-    st.header("⚙️ AI 配置")
-    api_key = st.text_input("请输入你的 DeepSeek API Key", type="password", help="在此填入你的 API Key 即可开始使用")
+    # 只有在以下情况才去读取 Google Sheets:
+    # 1. session_state 里没有用户信息
+    # 2. 用户输入的 code 和上次验证成功的 code 不一致
+    if "user_info" not in st.session_state or st.session_state.get("last_verified_code") != user_code:
 
-    if not api_key:
-        st.info("待输入 API Key...")
-        st.stop()
+        with st.spinner("正在验证权限..."):
+            user_data, msg = verify_user(user_code)
 
-# --- 侧边栏：优化偏好设置 ---
-with st.sidebar:
+            if user_data is not None:
+                # 验证成功，存入“记忆”
+                st.session_state.user_info = user_data.to_dict()  # 转为字典方便存储
+                st.session_state.last_verified_code = user_code
+            else:
+                # 验证失败，显示错误并停止
+                st.error(msg)
+                if "user_info" in st.session_state:
+                    del st.session_state.user_info
+                st.stop()
+
+    # 从“记忆”中直接读取用户信息，不再请求网络
+    current_user = st.session_state.user_info
+
+    st.success(f"欢迎回来，{current_user['User_Name']}！")
+
+    # 计算剩余额度（注意：扣费后需要手动更新这个显示）
+    remaining = current_user['Total_Count'] - current_user['Used_Count']
+    st.metric("剩余可用额度", f"{remaining} 次")
+
     st.divider()
     st.header("🎨 简历定制偏好")
-    opt_style = st.radio(
-        "文风倾向",
-        ["稳重务实型 (金融/医疗/传统行业)", "极简干练型 (互联网/咨询/大厂)", "充满活力型 (初创/创意/快消)"],
-        index=1
-    )
-    detail_depth = st.select_slider(
-        "细节挖掘深度",
-        options=["点到为止", "标准修饰", "深度重构"],
-        value="标准修饰"
-    )
+    opt_style = st.radio("文风倾向", ["稳重务实型", "极简干练型", "充满活力型"], index=1)
+    detail_depth = st.select_slider("细节挖掘深度", options=["点到为止", "标准修饰", "深度重构"], value="标准修饰")
+
+# 初始化 AI 客户端 (统一使用 Secret)
+client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 
 
-# 初始化 AI 客户端
-client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
+# --- 5. 功能区 ---
 
-# --- 4. 功能一：精准匹配 (已改为云端同步) ---
+# 功能一：精准匹配
 st.header("📅 第一步：岗位匹配")
-
-# 建立连接 (会自动去 Secrets 里找 credentials)
-conn = st.connection("gsheets", type=GSheetsConnection)
-
-# 这里填入你 Google Sheet 的完整 URL 链接
-# 比如 https://docs.google.com/spreadsheets/d/xxxxx/edit
-SQL_SHEET_URL = "https://docs.google.com/spreadsheets/d/1L_wOUawDLGHIpKfMre0ZTooxY0kXE9kncd_vbuKdXw0/edit?gid=294214781#gid=294214781"
-# 尝试自动读取
 try:
-    # 只读取第一张工作表，设置 ttl=600 表示每 10 分钟缓存一次，减少 API 调用
-    df = conn.read(spreadsheet=SQL_SHEET_URL, ttl=600)
-    st.success("✅ 岗位库已从云端实时同步")
-except Exception as e:
-    st.error(f"无法同步云端岗位库，请检查 Secrets 配置。错误详情: {e}")
+    df = conn.read(spreadsheet=SQL_SHEET_URL, worksheet="jobs", ttl=600) # 假设岗位在 jobs 表
+    st.success("✅ 岗位库已同步")
+except:
+    st.error("无法同步岗位库，请检查表格名称是否为 'jobs'")
     st.stop()
 
-# 现在只需要上传简历了，岗位表不需要手动传了
-cv_file = st.file_uploader("2. 上传你的简历 (PDF)", type=["pdf"])
+cv_file = st.file_uploader("上传你的简历 (PDF)", type=["pdf"])
 
 if cv_file:
     # 筛选 UI 界面
@@ -308,7 +371,10 @@ if cv_file:
                                                               c not in ['match_score', 'match_reason', 'index']]
                     final_df = final_df[cols].sort_values(by='match_score', ascending=False)
 
-                    st.success("✅ 匹配完成！已按匹配度降序排列。")
+                    if deduct_usage(user_code, amount=1.0):
+                        # 同步更新本地缓存，这样页面不需要重新读表也能显示正确的余额
+                        st.session_state.user_info['Used_Count'] += 1
+                    st.success("✅ 匹配完成！已按匹配度降序排列(本次消耗 1 次额度)")
                     st.subheader("🎯 匹配结果推送 (含全字段信息)")
                     st.dataframe(final_df, use_container_width=True)
 
@@ -502,7 +568,11 @@ if st.button("🪄 启动专家级精修"):
                 except Exception as e:
                     final_summary = f"总结生成失败，错误原因：{e}"
 
-            status.update(label="✅ 全量精修完成！", state="complete", expanded=False)
+
+            if deduct_usage(user_code, amount=1.0):
+                # 同步更新本地缓存，这样页面不需要重新读表也能显示正确的余额
+                st.session_state.user_info['Used_Count'] += 1
+            status.update(label="✅ 全量精修完成！（本次消耗1次额度）", state="complete", expanded=False)
 
         st.session_state.refined_results = {
             "refined_data": refined_data,
@@ -548,6 +618,8 @@ st.info("💡 **小贴士**：优化建议中的 **[XX]** 是 AI 为你预留的
 # --- 6. 功能三：交互式 AI 助手 ---
 st.divider()
 st.subheader("💬 简历精修对话室")
+# 温馨提示
+st.info("💡 **计费说明**：对话模式每次提问消耗 **0.5** 次额度（深度精修消耗 1 次）。")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -557,17 +629,44 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-if chat_input := st.chat_input("例如：'帮我把这段经历写得更有领导力一点'"):
+# 聊天输入框
+if chat_input := st.chat_input("针对优化结果，你可以继续追问（如：'帮我把这段写得更专业点'）"):
+
+    # --- A. 余额检查 ---
+    # 直接从我们之前存在 session_state 里的用户信息判断
+    current_u = st.session_state.get("user_info")
+    if current_u['Used_Count'] >= current_u['Total_Count']:
+        st.warning("⚠️ 您的额度已耗尽，请联系管理员续费后再对话。")
+        st.stop()
+
+    # --- B. 展示并记录用户消息 ---
     st.session_state.messages.append({"role": "user", "content": chat_input})
     with st.chat_message("user"):
         st.markdown(chat_input)
 
+    # --- C. AI 响应 ---
     with st.chat_message("assistant"):
-        response = call_ai_with_retry(
-            client,
-            "deepseek-chat",
-            [{"role": "system", "content": "你是一个资深简历优化专家。"}] + st.session_state.messages
-        )
-        ans = response.choices[0].message.content
-        st.markdown(ans)
-    st.session_state.messages.append({"role": "assistant", "content": ans})
+        with st.spinner("专家正在思考中..."):
+            try:
+                # 调用 AI
+                response = call_ai_with_retry(
+                    client,
+                    "deepseek-chat",
+                    [{"role": "system",
+                      "content": "你是一个资深简历优化专家，请简明扼要地回答用户关于简历修改的提问。"}] + st.session_state.messages
+                )
+                ans = response.choices[0].message.content
+                st.markdown(ans)
+
+                # --- D. 成功后执行扣费 (0.5次) ---
+                if deduct_usage(user_code, amount=0.5):
+                    # 右下角弹出一个小气泡提示，不干扰对话
+                    st.toast(
+                        f"已消耗 0.5 次额度，剩余 {current_u['Total_Count'] - st.session_state.user_info['Used_Count']} 次",
+                        icon="💰")
+
+                # 记录 AI 回复
+                st.session_state.messages.append({"role": "assistant", "content": ans})
+
+            except Exception as e:
+                st.error(f"对话中断，请重试。错误信息：{e}")
