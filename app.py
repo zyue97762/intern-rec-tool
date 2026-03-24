@@ -103,39 +103,34 @@ def apply_custom_design():
 
 # --- 1. 页面基本配置 ---
 st.set_page_config(page_title=" 暑期实习求职利器", layout="wide", initial_sidebar_state="expanded")
-# --- 修改为：Hero Section (极光图形背景) ---
-st.markdown("""
-    <div style="
-        /* 使用分层渐变模拟极光图形效果 */
-        background: linear-gradient(135deg, #6366F1 0%, #A855F7 100%);
-        background-image: 
-            radial-gradient(at 10% 10%, rgba(255,255,255,0.15) 0px, transparent 50%),
-            radial-gradient(at 80% 90%, rgba(139, 92, 246, 0.3) 0px, transparent 50%),
-            radial-gradient(at 90% 10%, rgba(236, 72, 153, 0.2) 0px, transparent 50%),
-            linear-gradient(135deg, #6366F1 0%, #A855F7 100%);
 
-        padding: 55px;
-        border-radius: 28px;
-        color: white;
-        margin-bottom: 30px;
-        box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.3);
-        position: relative;
-        overflow: hidden;
-    ">
-        <div style="position: relative; z-index: 1;">
-            <h1 style="color: white !important; margin: 0; font-size: 2.5rem; background: none; -webkit-text-fill-color: white; border: none; padding: 0; font-weight: 800;">
-                嗨，未来的职场之星！🌟
-            </h1>
-            <p style="font-size: 1.2rem; opacity: 0.95; margin-top: 15px; max-width: 700px; line-height: 1.6; font-weight: 500;">
-                大厂实习简历总是石沉大海？让我们用 AI 深度解析你的职场基因，把平庸的描述转化为让面试官眼前一亮的“必杀技”。
-            </p>
-        </div>
-        <div style="position: absolute; right: -50px; bottom: -50px; width: 250px; height: 250px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
-    </div>
+# --- 修改为：Hero Section (修复缩进版本) ---
+st.markdown("""
+<div style="
+background: linear-gradient(135deg, #6366F1 0%, #A855F7 100%);
+background-image: radial-gradient(at 10% 10%, rgba(255,255,255,0.15) 0px, transparent 50%), radial-gradient(at 80% 90%, rgba(139, 92, 246, 0.3) 0px, transparent 50%), radial-gradient(at 90% 10%, rgba(236, 72, 153, 0.2) 0px, transparent 50%), linear-gradient(135deg, #6366F1 0%, #A855F7 100%);
+padding: 55px;
+border-radius: 28px;
+color: white;
+margin-bottom: 30px;
+box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.3);
+position: relative;
+overflow: hidden;
+">
+<div style="position: relative; z-index: 1;">
+<h1 style="color: white !important; margin: 0; font-size: 2.5rem; background: none; -webkit-text-fill-color: white; border: none; padding: 0; font-weight: 800;">
+嗨，未来的职场之星！🌟
+</h1>
+<p style="font-size: 1.2rem; opacity: 0.95; margin-top: 15px; max-width: 700px; line-height: 1.6; font-weight: 500;">
+大厂实习简历总是石沉大海？让我们用 AI 深度解析你的职场基因，把平庸的描述转化为让面试官眼前一亮的“必杀技”。
+</p>
+</div>
+<div style="position: absolute; right: -50px; bottom: -50px; width: 250px; height: 250px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+</div>
 """, unsafe_allow_html=True)
+
 st.title("🚀 暑期实习岗位精准匹配与优化工具")
 apply_custom_design()  # 调用美容函数
-
 
 
 # 从 Secrets 获取关键配置
