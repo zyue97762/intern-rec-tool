@@ -427,101 +427,125 @@ if cv_file:
         if filtered_df.empty:
             st.error("筛选后没有符合要求的岗位，请放宽筛选条件。")
         else:
-            with st.spinner("AI 正在深度解析简历与岗位的契合度..."):
+            # 设定要交给 AI 深度评估的最大岗位数量（避免费用过高和等待太久，建议截取前 60 个）
+            max_eval_count = 60
+            jobs_to_eval = filtered_df.head(max_eval_count)
+
+            with st.status(f"🚀 AI 正在深度解析前 {len(jobs_to_eval)} 个优质岗位...", expanded=True) as status:
                 # 读取简历内容
                 with pdfplumber.open(cv_file) as pdf:
                     cv_text = "".join([page.extract_text() for page in pdf.pages])
 
-                # 提取关键信息给 AI (取前15个岗位，防止 Token 溢出)
-                jobs_to_ai = filtered_df[['职位名称', '职位描述', '任职要求']].head(100).reset_index().to_dict(
-                    orient='records')
+                # 提取关键信息并转为字典列表
+                jobs_list = jobs_to_eval[['职位名称', '职位描述', '任职要求']].reset_index().to_dict(orient='records')
 
-                prompt = f"""
-                你现在是一位拥有 15 年经验的资深招聘专家，擅长从复杂的简历中挖掘人才与岗位的深度契合点。
+                # 设置分批参数
+                batch_size = 12  # 每次喂给 AI 12 个岗位，极其稳定
+                all_match_data = []  # 收集所有批次的结果
 
-                ### 评估背景
-                【候选人简历】：
-                {cv_text[:2500]}
+                # 创建进度条组件
+                progress_bar = st.progress(0)
 
-                【待匹配岗位列表】：
-                {json.dumps(jobs_to_ai, ensure_ascii=False)}
+                # 核心：循环分批喂给 AI
+                for i in range(0, len(jobs_list), batch_size):
+                    batch = jobs_list[i:i + batch_size]
+                    current_batch_num = (i // batch_size) + 1
+                    total_batches = (len(jobs_list) + batch_size - 1) // batch_size
 
-                ### 你的任务
-                请基于以下逻辑框架，对简历与每个岗位进行深度匹配分析：
+                    status.write(
+                        f"⏳ 正在分析第 {current_batch_num}/{total_batches} 批岗位数据 (包含 {len(batch)} 个岗位)...")
 
-                1. **核心技能匹配度**：对比简历中的技术栈（如 Python, SQL, 财务建模等）与 JD 的硬性要求。
-                2. **行业/项目相关性**：分析过往项目或实习经历在业务逻辑上是否与目标岗位一致。
-                3. **软实力与潜力**：从奖项、社团经历中评估候选人的学习能力和执行力。
+                    prompt = f"""
+                    你现在是一位拥有 15 年经验的资深招聘专家，擅长从复杂的简历中挖掘人才与岗位的深度契合点。
 
-                ### 评分准则
-                - **90-100分**：完美匹配，几乎无需培训即可上手。
-                - **70-89分**：具备核心能力，但在特定经验或次要工具上略有欠缺。
-                - **50-69分**：有一定基础，但需要大量带教或转岗跨度较大。
-                - **50分以下**：基本不匹配。
+                    ### 评估背景
+                    【候选人简历】：
+                    {cv_text[:2500]}
 
-                ### 输出要求
-                请严格按 JSON 数组格式返回，不要包含任何前导语或总结语。格式如下：
-                [
-                  {{
-                    "index": 岗位索引号,
-                    "match_score": 整数评分,
-                    "match_reason": "【核心优势】：[列出1-2点最匹配的经历或技能]；【潜在挑战】：[指出简历中缺少的关键要素或不足]；【综合判定】：[一句话说明为什么值得投递]。"
-                  }}
-                ]
-                """
+                    【待匹配岗位列表】：
+                    {json.dumps(jobs_to_ai, ensure_ascii=False)}
 
-                try:
-                    response = call_ai_with_retry(
-                        client,
-                        "deepseek-chat",
-                        [{"role": "user", "content": prompt}]
-                    )
+                    ### 你的任务
+                    请基于以下逻辑框架，对简历与每个岗位进行深度匹配分析：
 
-                    # 1. 获取原始文本并清理（防止 AI 多嘴输出 ```json ... ```）
-                    raw_content = response.choices[0].message.content.strip()
-                    if raw_content.startswith("```json"):
-                        raw_content = raw_content.replace("```json", "").replace("```", "").strip()
+                    1. **核心技能匹配度**：对比简历中的技术栈（如 Python, SQL, 财务建模等）与 JD 的硬性要求。
+                    2. **行业/项目相关性**：分析过往项目或实习经历在业务逻辑上是否与目标岗位一致。
+                    3. **软实力与潜力**：从奖项、社团经历中评估候选人的学习能力和执行力。
 
-                    ai_res = json.loads(raw_content)
+                    ### 评分准则
+                    - **90-100分**：完美匹配，几乎无需培训即可上手。
+                    - **70-89分**：具备核心能力，但在特定经验或次要工具上略有欠缺。
+                    - **50-69分**：有一定基础，但需要大量带教或转岗跨度较大。
+                    - **50分以下**：基本不匹配。
 
-                    # 2. 强壮的解析逻辑：判断是列表还是字典
-                    if isinstance(ai_res, list):
-                        # 如果 AI 直接返回了 [{}, {}]
-                        match_data = ai_res
-                    elif isinstance(ai_res, dict):
-                        # 如果 AI 返回了 {"results": [{}, {}]} 或 {"matches": []}
-                        match_data = ai_res.get("results", ai_res.get("matches", list(ai_res.values())[0]))
-                    else:
-                        st.error("AI 返回的格式无法识别，请重试。")
-                        st.stop()
+                    ### 输出要求
+                    请严格按 JSON 数组格式返回，不要包含任何前导语或总结语。格式如下：
+                    [
+                      {{
+                        "index": 岗位索引号,
+                        "match_score": 整数评分,
+                        "match_reason": "【核心优势】：[列出1-2点最匹配的经历或技能]；【潜在挑战】：[指出简历中缺少的关键要素或不足]；【综合判定】：[一句话说明为什么值得投递]。"
+                      }}
+                    ]
+                    """
 
-                    # 3. 转换为 DataFrame
-                    ai_df = pd.DataFrame(match_data)
+                    try:
+                        response = call_ai_with_retry(
+                            client,
+                            "deepseek-chat",
+                            [{"role": "user", "content": prompt}]
+                        )
 
-                    # 检查 index 字段是否存在
-                    if 'index' not in ai_df.columns:
-                        st.error("AI 返回的数据中缺少 index 字段，请重新点击匹配。")
-                        st.stop()
+                        raw_content = response.choices[0].message.content.strip()
+                        if raw_content.startswith("```json"):
+                            raw_content = raw_content.replace("```json", "").replace("```", "").strip()
+                        elif raw_content.startswith("```"):
+                            raw_content = raw_content.replace("```", "").strip()
 
-                    # 确保 index 类型一致
+                        ai_res = json.loads(raw_content)
+
+                        # 合并当前批次结果
+                        if isinstance(ai_res, list):
+                            all_match_data.extend(ai_res)
+                        elif isinstance(ai_res, dict):
+                            all_match_data.extend(
+                                ai_res.get("results", ai_res.get("matches", list(ai_res.values())[0])))
+
+                    except Exception as e:
+                        status.write(f"⚠️ 第 {current_batch_num} 批解析出现小波动，已跳过。错误：{e}")
+                        continue  # 某一批失败不影响整体
+
+                    # 更新进度条
+                    progress = min((i + batch_size) / len(jobs_list), 1.0)
+                    progress_bar.progress(progress)
+
+                # --- 循环结束，处理所有结果 ---
+                if not all_match_data:
+                    st.error("所有批次的 AI 解析均失败，请稍后重试。")
+                    st.stop()
+
+                status.write("✨ 所有岗位解析完毕，正在生成最终报告...")
+
+                # 转换为 DataFrame 并与原表合并
+                ai_df = pd.DataFrame(all_match_data)
+
+                if 'index' in ai_df.columns:
                     ai_df['index'] = ai_df['index'].astype(int)
                     final_df = filtered_df.reset_index().merge(ai_df, on='index', how='inner')
 
-                    # 重新排序列，把匹配结果放最前面
                     cols = ['match_score', 'match_reason'] + [c for c in final_df.columns if
                                                               c not in ['match_score', 'match_reason', 'index']]
                     final_df = final_df[cols].sort_values(by='match_score', ascending=False)
 
                     if deduct_usage(user_code, amount=1.0):
-                        # 同步更新本地缓存，这样页面不需要重新读表也能显示正确的余额
                         pass
-                    st.success("✅ 匹配完成！已按匹配度降序排列(本次消耗 1 次额度)")
-                    # 【核心修改 1】：把计算出来的结果存入浏览器的“记忆”中
-                    st.session_state.match_results = final_df
 
-                except Exception as e:
-                    st.error(f"匹配失败，可能是 API 响应格式问题。错误详情：{e}")
-                    
+                    st.session_state.match_results = final_df
+                    status.update(label="✅ 匹配完成！已按匹配度降序排列(本次消耗 1 次额度)", state="complete",
+                                  expanded=False)
+                else:
+                    st.error("AI 返回的数据缺少 index 字段合并失败。")
+
     if "match_results" in st.session_state:
         st.subheader("🎯 匹配结果推送 (含全字段信息)")
         # 【新增需求】：匹配分数定义说明
