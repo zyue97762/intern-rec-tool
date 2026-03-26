@@ -365,7 +365,7 @@ client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 # 功能一：精准匹配
 st.header("📅 第一步：岗位匹配")
 try:
-    df = conn.read(spreadsheet=SQL_SHEET_URL, worksheet="jobs", ttl=0) # 假设岗位在 jobs 表
+    df = conn.read(spreadsheet=SQL_SHEET_URL, worksheet="jobs", ttl=600) # 假设岗位在 jobs 表
     st.success("✅ 岗位库已同步")
 except:
     st.error("无法同步岗位库，请检查表格名称是否为 'jobs'")
@@ -433,7 +433,7 @@ if cv_file:
                     cv_text = "".join([page.extract_text() for page in pdf.pages])
 
                 # 提取关键信息给 AI (取前15个岗位，防止 Token 溢出)
-                jobs_to_ai = filtered_df[['职位名称', '职位描述', '任职要求']].head(15).reset_index().to_dict(
+                jobs_to_ai = filtered_df[['职位名称', '职位描述', '任职要求']].head(100).reset_index().to_dict(
                     orient='records')
 
                 prompt = f"""
@@ -516,15 +516,29 @@ if cv_file:
                         # 同步更新本地缓存，这样页面不需要重新读表也能显示正确的余额
                         pass
                     st.success("✅ 匹配完成！已按匹配度降序排列(本次消耗 1 次额度)")
-                    st.subheader("🎯 匹配结果推送 (含全字段信息)")
-                    st.dataframe(final_df, use_container_width=True)
-
-                    # 下载按钮
-                    csv_data = final_df.to_csv(index=False).encode('utf-8-sig')
-                    st.download_button("📥 下载完整分析报告 (CSV)", data=csv_data, file_name="实习匹配结果.csv")
+                    # 【核心修改 1】：把计算出来的结果存入浏览器的“记忆”中
+                    st.session_state.match_results = final_df
 
                 except Exception as e:
                     st.error(f"匹配失败，可能是 API 响应格式问题。错误详情：{e}")
+                    
+    if "match_results" in st.session_state:
+        st.subheader("🎯 匹配结果推送 (含全字段信息)")
+        # 【新增需求】：匹配分数定义说明
+        st.info("""
+        **💡 匹配分数定义：**
+        - **90-100分**：完美匹配，几乎无需培训即可上手。
+        - **70-89分**：具备核心能力，但在特定经验或次要工具上略有欠缺。
+        - **50-69分**：有一定基础，但需要大量带教或转岗跨度较大。
+        - **50分以下**：基本不匹配。
+        """)
+        # 从“记忆”中读取表格并展示
+        st.dataframe(st.session_state.match_results, use_container_width=True)
+
+        # 下载按钮（现在它可以被无限次点击了）
+        csv_data = st.session_state.match_results.to_csv(index=False).encode('utf-8-sig')
+        st.download_button("📥 下载完整分析报告 (CSV)", data=csv_data, file_name="实习匹配结果.csv")
+
 
 # --- 5. 功能二：简历深度优化 (全量精修版 - 改进手动粘贴功能) ---
 st.divider()
