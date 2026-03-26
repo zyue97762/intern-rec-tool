@@ -463,7 +463,7 @@ if cv_file:
                     {cv_text[:2500]}
 
                     【待匹配岗位列表】：
-                    {json.dumps(jobs_to_ai, ensure_ascii=False)}
+                    {json.dumps(batch, ensure_ascii=False)}
 
                     ### 你的任务
                     请基于以下逻辑框架，对简历与每个岗位进行深度匹配分析：
@@ -874,8 +874,3 @@ if chat_input := st.chat_input("针对优化结果，你可以继续追问"):
             except Exception as e:
                 st.error(f"对话中断，请重试。错误信息：{e}")
 
-# 将筛选器放入一个 container 中，自动触发 CSS 卡片样式
-with st.container():
-    st.subheader("🔍 岗位精准筛选")
-    c1, c2, c3 = st.columns(3)
-    # ... 剩下的 multiselect 代码 ...
