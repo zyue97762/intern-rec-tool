@@ -365,7 +365,7 @@ client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 # 功能一：精准匹配
 st.header("📅 第一步：岗位匹配")
 try:
-    df = conn.read(spreadsheet=SQL_SHEET_URL, worksheet="jobs", ttl=600) # 假设岗位在 jobs 表
+    df = conn.read(spreadsheet=SQL_SHEET_URL, worksheet="jobs", ttl=0) # 假设岗位在 jobs 表
     st.success("✅ 岗位库已同步")
 except:
     st.error("无法同步岗位库，请检查表格名称是否为 'jobs'")
@@ -376,7 +376,7 @@ cv_file = st.file_uploader("上传你的简历 (PDF)", type=["pdf"])
 if cv_file:
     # 筛选 UI 界面
     st.subheader("🔍 岗位精准筛选")
-    c1, c2, c3 = st.columns(3)
+    c1, c2, c3, c4, c5 = st.columns(5)
 
     with c1:
         # 对应表头：工作地点
@@ -393,6 +393,18 @@ if cv_file:
         convert_list = df['转正机会'].dropna().unique().tolist() if '转正机会' in df.columns else []
         sel_convert = st.multiselect("转正机会", options=convert_list)
 
+    with c4:
+        # 【新增】对应表头：实习领域
+        field_list = df['实习领域'].dropna().unique().tolist() if '实习领域' in df.columns else []
+        sel_field = st.multiselect("实习领域", options=field_list)
+
+    with c5:
+        # 【新增】对应表头：领域大类
+        category_list = df['领域大类'].dropna().unique().tolist() if '领域大类' in df.columns else []
+        sel_category = st.multiselect("领域大类", options=category_list)
+
+
+
     # 执行 Python 过滤逻辑
     filtered_df = df.copy()
     if sel_cities:
@@ -401,6 +413,12 @@ if cv_file:
         filtered_df = filtered_df[filtered_df['实习月数'].isin(sel_months)]
     if sel_convert:
         filtered_df = filtered_df[filtered_df['转正机会'].isin(sel_convert)]
+    # 【新增】实习领域过滤
+    if sel_field:
+        filtered_df = filtered_df[filtered_df['实习领域'].isin(sel_field)]
+    # 【新增】领域大类过滤
+    if sel_category:
+        filtered_df = filtered_df[filtered_df['领域大类'].isin(sel_category)]
 
     st.write(f"📊 筛选后符合要求的岗位：**{len(filtered_df)}** 个")
     st.dataframe(filtered_df.head(50), use_container_width=True)  # 预览前50条
