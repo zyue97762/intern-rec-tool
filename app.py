@@ -375,50 +375,51 @@ cv_file = st.file_uploader("上传你的简历 (PDF)", type=["pdf"])
 
 if cv_file:
     # 筛选 UI 界面
+    # 筛选 UI 界面
     st.subheader("🔍 岗位精准筛选")
-    c1, c2, c3, c4, c5 = st.columns(5)
 
-    with c1:
-        # 对应表头：工作地点
-        city_list = df['工作地点'].dropna().unique().tolist() if '工作地点' in df.columns else []
-        sel_cities = st.multiselect("实习区域 (工作地点)", options=city_list)
-
-    with c2:
-        # 对应表头：实习月数
-        month_list = df['实习月数'].dropna().unique().tolist() if '实习月数' in df.columns else []
-        sel_months = st.multiselect("实习时长 (月数)", options=month_list)
-
-    with c3:
-        # 对应表头：转正机会
-        convert_list = df['转正机会'].dropna().unique().tolist() if '转正机会' in df.columns else []
-        sel_convert = st.multiselect("转正机会", options=convert_list)
-
-    with c4:
-        # 【新增】对应表头：实习领域
-        field_list = df['实习领域'].dropna().unique().tolist() if '实习领域' in df.columns else []
-        sel_field = st.multiselect("实习领域", options=field_list)
-
-    with c5:
-        # 【新增】对应表头：领域大类
+    # 【修改】第一排筛选条件：领域大类、实习领域、工作地点
+    row1_col1, row1_col2, row1_col3 = st.columns(3)
+    with row1_col1:
         category_list = df['领域大类'].dropna().unique().tolist() if '领域大类' in df.columns else []
         sel_category = st.multiselect("领域大类", options=category_list)
+    with row1_col2:
+        field_list = df['实习领域'].dropna().unique().tolist() if '实习领域' in df.columns else []
+        sel_field = st.multiselect("实习领域", options=field_list)
+    with row1_col3:
+        city_list = df['工作地点'].dropna().unique().tolist() if '工作地点' in df.columns else []
+        sel_cities = st.multiselect("工作地点", options=city_list)
 
-
+    # 【修改】第二排筛选条件：实习时长、转正机会、学历要求
+    row2_col1, row2_col2, row2_col3 = st.columns(3)
+    with row2_col1:
+        month_list = df['实习月数'].dropna().unique().tolist() if '实习月数' in df.columns else []
+        sel_months = st.multiselect("实习时长 (月数)", options=month_list)
+    with row2_col2:
+        convert_list = df['转正机会'].dropna().unique().tolist() if '转正机会' in df.columns else []
+        sel_convert = st.multiselect("转正机会", options=convert_list)
+    with row2_col3:
+        edu_list = df['学历要求'].dropna().unique().tolist() if '学历要求' in df.columns else []
+        sel_edu = st.multiselect("学历要求", options=edu_list)
 
     # 执行 Python 过滤逻辑
     filtered_df = df.copy()
+    if sel_category:
+        filtered_df = filtered_df[filtered_df['领域大类'].isin(sel_category)]
+    if sel_field:
+        filtered_df = filtered_df[filtered_df['实习领域'].isin(sel_field)]
     if sel_cities:
         filtered_df = filtered_df[filtered_df['工作地点'].isin(sel_cities)]
     if sel_months:
         filtered_df = filtered_df[filtered_df['实习月数'].isin(sel_months)]
     if sel_convert:
         filtered_df = filtered_df[filtered_df['转正机会'].isin(sel_convert)]
-    # 【新增】实习领域过滤
-    if sel_field:
-        filtered_df = filtered_df[filtered_df['实习领域'].isin(sel_field)]
-    # 【新增】领域大类过滤
-    if sel_category:
-        filtered_df = filtered_df[filtered_df['领域大类'].isin(sel_category)]
+    # 【新增】学历要求过滤
+    if sel_edu:
+        filtered_df = filtered_df[filtered_df['学历要求'].isin(sel_edu)]
+        # 强制在后端按“发布时间”降序排列，确保后续预览和喂给 AI 的都是最新岗位
+    if '发布时间' in filtered_df.columns:
+        filtered_df = filtered_df.sort_values(by='发布时间', ascending=False)
 
     st.write(f"📊 筛选后符合要求的岗位：**{len(filtered_df)}** 个")
     st.dataframe(filtered_df.head(50), use_container_width=True)  # 预览前50条
@@ -533,9 +534,13 @@ if cv_file:
                     ai_df['index'] = ai_df['index'].astype(int)
                     final_df = filtered_df.reset_index().merge(ai_df, on='index', how='inner')
 
-                    cols = ['match_score', 'match_reason'] + [c for c in final_df.columns if
-                                                              c not in ['match_score', 'match_reason', 'index']]
-                    final_df = final_df[cols].sort_values(by='match_score', ascending=False)
+                    # 【核心修改】：在这里把 AI 返回的英文列名改成中文
+                    final_df = final_df.rename(columns={'match_score': '匹配分数', 'match_reason': '匹配依据'})
+
+                    # 将改名后的这两列排在最前面，并按“匹配分数”降序排列
+                    cols = ['匹配分数', '匹配依据'] + [c for c in final_df.columns if
+                                                       c not in ['匹配分数', '匹配依据', 'index']]
+                    final_df = final_df[cols].sort_values(by='匹配分数', ascending=False)
 
                     if deduct_usage(user_code, amount=1.0):
                         pass
