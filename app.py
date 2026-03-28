@@ -12,91 +12,84 @@ from streamlit_gsheets import GSheetsConnection
 
 
 # ==========================================
-# 🎨 【新增】CSS 样式注入函数：给网页做美容
+# 💎 【现代 SaaS 风】CSS 样式注入
 # ==========================================
 def apply_custom_design():
     st.markdown("""
     <style>
-    /* 1. 消除紧凑感：大幅释放容器宽度，增加质感背景 */
+    /* 1. 全局背景：非常淡的蓝灰色 (Slate-50)，让白色卡片能凸显出来 */
     .main {
-        background: radial-gradient(circle at top right, #FDFCFE, #F1F5F9) !important;
-        font-family: 'Segoe UI', Roboto, sans-serif;
+        background-color: #F8FAFC !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     .block-container {
-        /* 将宽度拉大到全屏的 95% */
-        max-width: 95% !important; 
-        /* 在超大屏上封顶，保持阅读舒适 */
-        max-width: 1600px !important; 
-        padding-left: 2rem !important;
-        padding-right: 2rem !important;
-        padding-top: 1.5rem !important;
+        max-width: 98% !important; /* 从 1200px 改为 98%，几乎撑满全屏 */
+        padding-left: 3rem !important; /* 两侧保留基础的呼吸空间 */
+        padding-right: 3rem !important;
+        padding-top: 2rem !important;
         padding-bottom: 5rem !important;
     }
 
-    /* 2. 标题与层级：增加视觉冲击力 */
-    h1 {
-        background: linear-gradient(135deg, #6366F1 0%, #A855F7 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: 800 !important;
-        font-size: 2.5rem !important;
-        margin-bottom: 1rem !important;
-    }
-    h2, h3 {
-        color: #334155 !important;
-        border-left: 6px solid #8B5CF6;
-        padding-left: 15px !important;
-    }
-
-    /* 3. 卡片系统：深度阴影与圆角，解决“平面感” */
-    div[data-testid="stExpander"], div[data-testid="stMetric"], .stDataFrame, div.stTabs {
+    /* 2. 卡片系统：白底、细腻圆角(12px)、高级柔和阴影 */
+    div[data-testid="stExpander"], 
+    div[data-testid="stMetric"], 
+    .stDataFrame, 
+    div.stTabs {
         background-color: #FFFFFF !important;
-        border: 1px solid rgba(226, 232, 240, 0.6) !important;
-        border-radius: 20px !important;
-        box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.05) !important;
-        padding: 1.2rem !important;
+        border: 1px solid #E2E8F0 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+        padding: 1.5rem !important;
         margin-bottom: 1.5rem !important;
     }
 
-    /* 4. 表格美化：消除 Excel 味 */
-    [data-testid="stDataFrame"] {
-        border: none !important;
-        background-color: #FAFAFB !important;
-        border-radius: 12px !important;
-        padding: 8px !important;
-    }
-
-    /* 5. 按钮重构：动效反馈 */
+    /* 3. 按钮设计：使用高级的靛蓝色 (Indigo) 渐变，带有微动效 */
     .stButton>button {
         width: 100% !important;
-        border-radius: 14px !important;
-        background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%) !important;
+        background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%) !important;
         color: white !important;
-        font-weight: 600 !important;
-        height: 3.2rem !important;
         border: none !important;
-        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-        box-shadow: 0 8px 15px rgba(99, 102, 241, 0.2) !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        height: 3rem !important;
+        box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2) !important;
+        transition: all 0.2s ease-in-out !important;
     }
     .stButton>button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 20px rgba(99, 102, 241, 0.3) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3) !important;
     }
 
-    /* 6. 标签页 (Tabs) 现代感升级 */
-    .stTabs [data-baseweb="tab-list"] {
-        background-color: #F1F5F9;
-        border-radius: 14px;
-        padding: 5px;
-        gap: 8px;
+    /* 4. 标题色彩：深灰蓝，稳重且专业 */
+    h1, h2, h3 {
+        color: #0F172A !important;
+        font-weight: 700 !important;
     }
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 10px;
-        padding: 8px 20px;
+
+    /* 5. 输入框美化：增加一点内阴影，显得更精致 */
+    .stTextInput>div>div>input, 
+    .stTextArea>div>div>textarea, 
+    [data-baseweb="select"] {
+        border-radius: 8px !important;
+        border: 1px solid #CBD5E1 !important;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02) !important;
     }
-    .stTabs [aria-selected="true"] {
-        background-color: white !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+    /* 输入框聚焦时的颜色 */
+    .stTextInput>div>div>input:focus, 
+    .stTextArea>div>div>textarea:focus {
+        border-color: #6366F1 !important;
+        box-shadow: 0 0 0 1px #6366F1 !important;
+    }
+    /* 修复底部聊天框过宽，强制其与主体内容等宽并居中 */
+    [data-testid="stChatInput"] {
+        max-width: 1400px !important; /* 限制它的最大宽度 */
+        margin: 0 auto !important; /* 强制水平居中 */
+    }
+    
+    /* 针对某些 Streamlit 版本的额外保护措施 */
+    .stChatInputContainer {
+        padding-left: 3rem !important; /* 与 block-container 的左右 padding 保持一致 */
+        padding-right: 3rem !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -104,32 +97,26 @@ def apply_custom_design():
 # --- 1. 页面基本配置 ---
 st.set_page_config(page_title=" 暑期实习求职利器", layout="wide", initial_sidebar_state="expanded")
 
-# --- 修改为：Hero Section (修复缩进版本) ---
+# --- 替换为你新的 Hero Section ---
+# --- 现代 SaaS 风 Hero Section ---
 st.markdown("""
 <div style="
-background: linear-gradient(135deg, #6366F1 0%, #A855F7 100%);
-background-image: radial-gradient(at 10% 10%, rgba(255,255,255,0.15) 0px, transparent 50%), radial-gradient(at 80% 90%, rgba(139, 92, 246, 0.3) 0px, transparent 50%), radial-gradient(at 90% 10%, rgba(236, 72, 153, 0.2) 0px, transparent 50%), linear-gradient(135deg, #6366F1 0%, #A855F7 100%);
-padding: 55px;
-border-radius: 28px;
-color: white;
-margin-bottom: 30px;
-box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.3);
-position: relative;
-overflow: hidden;
+    background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
+    border: 1px solid #C7D2FE;
+    padding: 40px;
+    border-radius: 16px;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
 ">
-<div style="position: relative; z-index: 1;">
-<h1 style="color: white !important; margin: 0; font-size: 2.5rem; background: none; -webkit-text-fill-color: white; border: none; padding: 0; font-weight: 800;">
-嗨，未来的职场之星！🌟
-</h1>
-<p style="font-size: 1.2rem; opacity: 0.95; margin-top: 15px; max-width: 700px; line-height: 1.6; font-weight: 500;">
-大厂实习简历总是石沉大海？让我们用 AI 深度解析你的职场基因，把平庸的描述转化为让面试官眼前一亮的“必杀技”。
-</p>
-</div>
-<div style="position: absolute; right: -50px; bottom: -50px; width: 250px; height: 250px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+    <h1 style="color: #312E81 !important; margin-top: 0; font-size: 2.2rem; font-weight: 800; border: none;">
+        ✨ 职场之星：求职竞争力引擎
+    </h1>
+    <p style="color: #4338CA; font-size: 1.1rem; margin-top: 10px; max-width: 650px; line-height: 1.6;">
+        大厂实习简历总是石沉大海？让我们用 AI 深度解析你的职场基因，把平庸的描述转化为让面试官眼前一亮的“必杀技”。
+    </p>
 </div>
 """, unsafe_allow_html=True)
 
-st.title("🚀 暑期实习岗位精准匹配与优化工具")
 apply_custom_design()  # 调用美容函数
 
 
@@ -361,12 +348,13 @@ client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 
 
 # --- 5. 功能区 ---
-
+st.header("01 / 岗位精准匹配")
 # 功能一：精准匹配
-st.header("📅 第一步：岗位匹配")
+# --- 修改后 ---
 try:
-    df = conn.read(spreadsheet=SQL_SHEET_URL, worksheet="jobs", ttl=600) # 假设岗位在 jobs 表
-    st.success("✅ 岗位库已同步")
+    df = conn.read(spreadsheet=SQL_SHEET_URL, worksheet="jobs", ttl=600)
+    # 变成一行浅灰色的细小提示，并展示岗位总数，增加产品的“厚重感”
+    st.caption(f"🟢 岗位数据中心已就绪 | 实时在库岗位：{len(df)} 个")
 except:
     st.error("无法同步岗位库，请检查表格名称是否为 'jobs'")
     st.stop()
@@ -374,33 +362,35 @@ except:
 cv_file = st.file_uploader("上传你的简历 (PDF)", type=["pdf"])
 
 if cv_file:
-    # 筛选 UI 界面
-    # 筛选 UI 界面
-    st.subheader("🔍 岗位精准筛选")
 
-    # 【修改】第一排筛选条件：领域大类、实习领域、工作地点
-    row1_col1, row1_col2, row1_col3 = st.columns(3)
-    with row1_col1:
-        category_list = df['领域大类'].dropna().unique().tolist() if '领域大类' in df.columns else []
-        sel_category = st.multiselect("领域大类", options=category_list)
-    with row1_col2:
-        field_list = df['实习领域'].dropna().unique().tolist() if '实习领域' in df.columns else []
-        sel_field = st.multiselect("实习领域", options=field_list)
-    with row1_col3:
-        city_list = df['工作地点'].dropna().unique().tolist() if '工作地点' in df.columns else []
-        sel_cities = st.multiselect("工作地点", options=city_list)
+    # 筛选 UI 界面
+    # --- 修改后 ---
+    st.markdown("#### 🔍 岗位筛选")  # 用 markdown 的 h4 显得比 subheader 更精致一点
+
+    # 🌟 核心修改：用带有 border 的容器把所有筛选框包裹起来
+    with st.container(border=True):
+        row1_col1, row1_col2, row1_col3 = st.columns(3)
+        with row1_col1:
+            category_list = df['领域大类'].dropna().unique().tolist() if '领域大类' in df.columns else []
+            sel_category = st.multiselect("领域大类", options=category_list)
+        with row1_col2:
+            field_list = df['实习领域'].dropna().unique().tolist() if '实习领域' in df.columns else []
+            sel_field = st.multiselect("实习领域", options=field_list)
+        with row1_col3:
+            city_list = df['工作地点'].dropna().unique().tolist() if '工作地点' in df.columns else []
+            sel_cities = st.multiselect("工作地点", options=city_list)
 
     # 【修改】第二排筛选条件：实习时长、转正机会、学历要求
-    row2_col1, row2_col2, row2_col3 = st.columns(3)
-    with row2_col1:
-        month_list = df['实习月数'].dropna().unique().tolist() if '实习月数' in df.columns else []
-        sel_months = st.multiselect("实习时长 (月数)", options=month_list)
-    with row2_col2:
-        convert_list = df['转正机会'].dropna().unique().tolist() if '转正机会' in df.columns else []
-        sel_convert = st.multiselect("转正机会", options=convert_list)
-    with row2_col3:
-        edu_list = df['学历要求'].dropna().unique().tolist() if '学历要求' in df.columns else []
-        sel_edu = st.multiselect("学历要求", options=edu_list)
+        row2_col1, row2_col2, row2_col3 = st.columns(3)
+        with row2_col1:
+            month_list = df['实习月数'].dropna().unique().tolist() if '实习月数' in df.columns else []
+            sel_months = st.multiselect("实习时长 (月数)", options=month_list)
+        with row2_col2:
+            convert_list = df['转正机会'].dropna().unique().tolist() if '转正机会' in df.columns else []
+            sel_convert = st.multiselect("转正机会", options=convert_list)
+        with row2_col3:
+            edu_list = df['学历要求'].dropna().unique().tolist() if '学历要求' in df.columns else []
+            sel_edu = st.multiselect("学历要求", options=edu_list)
 
     # 执行 Python 过滤逻辑
     filtered_df = df.copy()
@@ -568,204 +558,240 @@ if cv_file:
         csv_data = st.session_state.match_results.to_csv(index=False).encode('utf-8-sig')
         st.download_button("📥 下载完整分析报告 (CSV)", data=csv_data, file_name="实习匹配结果.csv")
 
-
 # --- 5. 功能二：简历深度优化 (全量精修版 - 改进手动粘贴功能) ---
 st.divider()
-st.header("✍️ 第二步：简历深度优化")
 
 # 初始化 Session State 缓存结果
 if "refined_results" not in st.session_state:
     st.session_state.refined_results = None
 
-# 1. 设置输入模式：PDF 提取 vs 手动输入
-input_tab1, input_tab2 = st.tabs(["📄 从上传的 PDF 提取", "⌨️ 手动粘贴/修正内容"])
-final_sections = {}  # 用于存储最终传递给 AI 的内容
+# 【核心优化 1：渐进式隐藏】只有当 cv_file 存在（用户上传了简历）时，才显示第二步！
+if cv_file is not None:
+    st.header("02 / 简历深度优化工作台")
 
-with input_tab1:
-    if cv_file:
-        with pdfplumber.open(cv_file) as pdf:
-            cv_raw_text = "".join([page.extract_text() for page in pdf.pages])
+    # 【核心优化 2：左右分栏工作台】将页面分为左右 1:1 的两栏
+    col_left, col_right = st.columns([1, 1], gap="large")
 
-        # 调用你原来的切分函数
-        auto_sections = split_resume_by_sections(cv_raw_text)
-        st.success("✅ 已从 PDF 自动识别模块，你可以在下方进行内容微调（若内容分类不满足需求，可以选择“手动粘贴”）")
+    final_sections = {}  # 用于存储最终传递给 AI 的内容
 
-        # 允许用户在 Tab 1 里实时预览和修改提取到的内容
-        for sec_name, sec_content in auto_sections.items():
-            final_sections[sec_name] = st.text_area(f"确认模块：{sec_name}", value=sec_content, height=150,
-                                                    key=f"auto_{sec_name}")
-    else:
-        st.info("请先在第一步上传 PDF 简历，或切换到“手动粘贴”模式。")
+    # ================= 左侧栏：展示和提取简历内容 =================
+    with col_left:
+        st.markdown("#### 📄 你的简历内容")
+        input_tab1, input_tab2 = st.tabs(["自动从 PDF 提取", "手动粘贴/修正"])
 
-with input_tab2:
-    st.markdown("##### 请按模块粘贴你想优化的内容")
-    manual_sections = {
-        "工作经历": st.text_area("工作/实习经历", placeholder="例如：2022.01-2023.01 XX公司 实习生\n1. 负责...",
-                                 height=150),
-        "项目经历": st.text_area("项目经历", placeholder="例如：XX数据分析项目\n使用Python进行...", height=150),
-        "教育与技能": st.text_area("教育背景、技能及证书", placeholder="例如：英语六级、Python熟练...", height=100)
-    }
-    # 如果用户在手动模式下填写了内容，则覆盖自动提取的内容
-    if any(manual_sections.values()):
-        # 过滤掉空的模块
-        final_sections = {k: v for k, v in manual_sections.items() if v.strip()}
+        with input_tab1:
+            # 因为最外层已经判断了 cv_file 存在，所以这里直接解析
+            with pdfplumber.open(cv_file) as pdf:
+                cv_raw_text = "".join([page.extract_text() for page in pdf.pages])
 
-# 2. 目标 JD 输入
-target_jd = st.text_area("🎯 请贴入目标岗位要求 (JD)", height=150, placeholder="粘贴完整的任职要求和职位描述...")
+            auto_sections = split_resume_by_sections(cv_raw_text)
+            st.success("✅ 已从 PDF 自动识别模块，可在此微调：")
 
+            for sec_name, sec_content in auto_sections.items():
+                final_sections[sec_name] = st.text_area(f"模块：{sec_name}", value=sec_content, height=150,
+                                                        key=f"auto_{sec_name}")
 
-# --- 修正后的“启动专家级精修”按钮逻辑 ---
-if st.button("🪄 启动专家级精修（消耗1额度）"):
-    if not final_sections or not target_jd:
-        st.error("请确保已输入简历内容和目标 JD")
-    else:
-        # 1. 必须先初始化变量，防止下方逻辑跳过时报错
-        refined_data = {}
-        competency_analysis = "分析生成失败"
-        final_summary = "总结生成失败"
+        with input_tab2:
+            st.caption("如果自动提取不准，可在此手动覆盖粘贴：")
+            manual_sections = {
+                "工作经历": st.text_area("工作/实习经历", placeholder="例如：2022.01-2023.01 XX公司 实习生\n1. 负责...",
+                                         height=150),
+                "项目经历": st.text_area("项目经历", placeholder="例如：XX数据分析项目\n使用Python进行...", height=150),
+                "教育与技能": st.text_area("教育背景、技能及证书", placeholder="例如：英语六级、Python熟练...", height=100)
+            }
+            if any(manual_sections.values()):
+                final_sections = {k: v for k, v in manual_sections.items() if v.strip()}
 
-        with st.status("🚀 专家正在深度重构中...", expanded=True) as status:
-
-            # --- 第一阶段：岗位胜任力解析 (逻辑保持不变) ---
-            status.write("🕵️ 正在进行岗位胜任力深度画像...")
-            analysis_prompt = f"""
-            你现在是资深猎头专家。请针对目标岗位 JD 进行深度解析：
-            目标岗位: {target_jd}
-
-            任务：提炼出企业最看重的【三项核心能力】，按以下格式输出：
-            ### 【岗位胜任力解析】
-            1. **专业能力 (Hard Skills)**：内容...
-            2. **通用素质 (Soft Skills)**：内容...
-            3. **业务潜力 (Potential)**：内容...
-            """
-            analysis_res = call_ai_with_retry(
-                client, "deepseek-chat", [{"role": "user", "content": analysis_prompt}]
-            )
-            competency_analysis = analysis_res.choices[0].message.content
-
-            for section_name, section_content in final_sections.items():
-                if not section_content.strip(): continue
-                status.write(f"正在重构：{section_name}...")
-
-                specific_prompt = f"""
-                你现在是一位拥有 15 年大厂招聘经验的【资深职业导师】，正在为候选人深度优化简历中的【{section_name}】模块。
-
-                ### 1. 核心输入
-                - **目标岗位要求 (JD)**：{target_jd}
-                - **本模块原始内容**：{section_content}
-                - **文风倾向**：{opt_style}
-                - **重构深度**：{detail_depth}
-
-                ### 2. 处理逻辑分配 (重要)
-                请首先判断【{section_name}】的内容属性：
-                - **属性 A (叙述类经历)**：包含工作经历、实习经历、项目经历、志愿者活动等。
-                - **属性 B (信息/列表类)**：包含基本信息、教育背景、技能证书、自我评价等。
-
-                ---
-
-                ### 3. 任务输出要求
-
-                #### 如果属于【属性 A (叙述类经历)】：
-                请严格执行 STAR+XYZ 规则进行重写，并输出以下三个部分：
-
-                ##### 第一：属性A核心任务：输出【简历精修对比表】
-                你必须输出一个 Markdown 表格，表格有且仅有三列，表格包含：【原始描述】、【优化建议 (含 [XX] 占位符)】、【优化逻辑】。
-                
-                ###### 🚨 强制排版规则 (杜绝散乱拆分)
-                 **一项目一行 (One Experience, One Row)**：
-                   - 严禁将同一家公司或同一个项目下的多条描述拆分成多行输出。
-                   - 必须将该项经历的所有原始描述合并在第一列的一个单元格内。
-                   - 必须将该项经历的所有优化建议合并在第二列的一个单元格内。
-
-                ###### 🚨 每一列的“内容红线” (违者重罚)
-                （1） **第一列【原始描述】**：
-                   - 必须原封不动复制用户提供的原始简历短句；
-                   - 不需要进行任何改写操作，不准在原文上下划线、删除线等修改，按照原文输出
-
-                （2） **第二列【优化建议 (含 [XX] 占位符)】**：
-                   - **这是最重要的列！** 只能填写重构后的**简历正文**，禁止只输出标题，必须针对每一条经历给出重构后的长句。
-                   - 必须使用 STAR/XYZ 公式，分点陈述（如：1. 2. 3.）。
-                   - **严禁**在此列写任何解释性文字或理由。
-                   - **严禁幻觉**：禁止虚构任何公司名称、项目金额、具体百分比。
-                   - 示例：`1. 负责[XX]项目，通过[XX]工具提高效率[XX]%。<br>2. 协调[XX]人团队完成[XX]任务。`
-
-                （3）**第三列【优化逻辑】**：
-                   - **只能填写“为什么要这么改”的解释。**
-                   - **严禁**在此列出现任何可以直接写进简历的描述性长句。
-                   - 示例：`量化了项目成果，突出了技术栈与 JD 的匹配度。
-                
-
-                ##### 第二：属性A格式参考：【简历精修对比表】输出模板参考
-                | 原始描述 | 优化建议 (含 [XX] 占位符) | 优化逻辑 |
-                | :--- | :--- | :--- |
-                | 负责财务报表制作 | 1. 独立完成[XX]份月度财务报表编制。<br>2. 使用[XX]工具优化核算流程。 | 量化了工作量，体现了工具熟练度。 |
-                ---
- 
-                #### 如果属于【属性 B (信息/列表类)】：
-                ##### 第一：属性B核心任务：输出【简历精修对比表】
-                你必须输出一个 Markdown 表格，表格有且仅有两列，表格包含：【原始描述】、【备注】
-                
-                ###### 🚨 每一列的“内容红线” (违者重罚)
-                （1） **第一列【原始描述】**：
-                   - 必须原封不动复制用户提供的原始简历短句；
-                   - 不需要进行任何改写操作，不准在原文上下划线、删除线等修改，按照原文输出
-            
-                （2） **第二列【备注】**：
-                   - 在该列统一说明：简历中的学历及技能等信息基于事实出发填写，为保证信息真实性，不做修改润色。
-                   
-                ##### 第二：属性B格式参考：【简历精修对比表】输出模板参考
-                | 原始描述 | 备注 |
-                | :--- | :--- |
-                | 助理会计师资格证书（初级会计） | 简历中的学历及技能等信息基于事实出发填写，为保证信息真实性，不做修改润色。 |
-                
-                ---   
-                   
-                
-                 ### 4. 基于“原始简历”的深度溯源提问 (严禁幻觉)
-                 请审视【原始简历内容】，找出其中描述模糊、缺乏数据、或能够进一步支撑 JD 的潜在点。
-                 请针对你在第一：核心任务：输出【简历精修对比表】中使用 **[XX]** 占位符的地方，向用户提出补全请求。
-                 **注意：** - 严禁基于你改写后的内容（如虚构的金额、比例）提问。
-                 - 必须针对原始经历中的模糊动词（如“负责、处理、协助”）进行追问。
-                 - 提问应引导用户回忆：具体的金额、具体的件数、具体的工具使用频率。
-                 - 列出 3-5 个针对原始事实的细节追问
-                ---
-                
-                """
-
-                module_res = call_ai_with_retry(
-                    client, "deepseek-chat", [{"role": "user", "content": specific_prompt}]
-                )
-                refined_data[section_name] = module_res.choices[0].message.content
-
-            # --- 第三阶段：生成全局总结 (修复缩进和变量作用域) ---
-            if refined_data:
-                status.write("📝 正在生成全局求职策略建议...")
-                all_refined = "\n".join(list(refined_data.values()))
-                summary_prompt = f"针对以下精修后的内容，总结核心竞争力、面试建议并写一段100字自我评价：\n{all_refined[:2000]}"
-
-                try:
-                    # 确保在 try 块内进行 AI 调用
-                    summary_res = call_ai_with_retry(
-                        client, "deepseek-chat", [{"role": "user", "content": summary_prompt}]
-                    )
-                    final_summary = summary_res.choices[0].message.content
-                except Exception as e:
-                    final_summary = f"总结生成失败，错误原因：{e}"
+        # ================= 右侧栏：输入目标 JD =================
+    with col_right:
+        st.markdown("#### 🎯 目标岗位 JD")
+        target_jd = st.text_area(
+            "请贴入目标岗位要求 (JD)",
+            height=580,
+            placeholder="请在此粘贴完整的任职要求和职位描述...",
+            label_visibility="collapsed"
+        )
+        st.markdown("<br>", unsafe_allow_html=True)
 
 
-            if deduct_usage(user_code, amount=1.0):
-                # 同步更新本地缓存，这样页面不需要重新读表也能显示正确的余额
-                pass
-            status.update(label="✅ 全量精修完成！（本次消耗1次额度）", state="complete", expanded=False)
 
-        st.session_state.refined_results = {
-            "refined_data": refined_data,
-            "competency_analysis": competency_analysis,
-            "final_summary": final_summary
-        }
-        # 强制触发一次重绘，让结果立即显示
-        st.rerun()
+        # 仅仅在这里获取按钮的点击状态，但不在这里执行逻辑！
+        start_btn_clicked = st.button("🪄 启动专家级精修（消耗1额度）", use_container_width=True)
 
+        # ================= 🚀 全局全宽进度区 (放在左右分栏之外) =================
+        # 【修改点 2】：把处理逻辑移到 col_left 和 col_right 的外面，这样它就会撑满全屏
+    if start_btn_clicked:
+        if not final_sections or not target_jd:
+            st.error("⚠️ 请确保已确认简历内容并粘贴了目标 JD！")
+        else:
+            refined_data = {}
+            competency_analysis = "分析生成失败"
+            final_summary = "总结生成失败"
+
+            # 加一点上边距，让加载框不要紧贴着上面的输入框
+            st.markdown("<br>", unsafe_allow_html=True)
+            # =================🚀 全局全宽进度区优化 =================
+            # 【核心修改点】：创建一个容器，该容器会自然撑满全局 block-container 的宽度
+            wide_status_container = st.container()
+            with wide_status_container:
+                # 将 st.status(...) 放在容器内。它就会自动左边对齐 col_left，右边对齐 col_right 了！
+                with st.status("🚀 专家正在深度重构中...", expanded=True) as status:
+                    total_steps = 1 + len(final_sections) + 1
+                    current_step = 0
+                    progress_bar = st.progress(0)
+
+                    # --- 第一阶段：岗位胜任力解析 ---
+                    status.write("🕵️ 正在进行岗位胜任力深度画像...")
+                    analysis_prompt = f"""
+                        你现在是资深猎头专家。请针对目标岗位 JD 进行深度解析：
+                        目标岗位: {target_jd}
+                        任务：提炼出企业最看重的【三项核心能力】，按以下格式输出：
+                        ### 【岗位胜任力解析】
+                        1. **专业能力 (Hard Skills)**：内容...
+                        2. **通用素质 (Soft Skills)**：内容...
+                        3. **业务潜力 (Potential)**：内容...
+                        """
+                    try:
+                        analysis_res = call_ai_with_retry(client, "deepseek-chat",
+                                                          [{"role": "user", "content": analysis_prompt}])
+                        competency_analysis = analysis_res.choices[0].message.content
+                    except Exception as e:
+                        status.write(f"⚠️ 解析岗位失败: {e}")
+
+                    # 更新进度条
+                    current_step += 1
+                    progress_bar.progress(current_step / total_steps)
+
+                    # --- 第二阶段：逐个模块重构 ---
+                    for section_name, section_content in final_sections.items():
+                        if not section_content.strip(): continue
+                        status.write(f"正在重构：{section_name}...")
+
+                        # 💡 注意：这里贴回你原本那个非常详细的 specific_prompt
+                        specific_prompt = f"""
+                        你现在是一位拥有 15 年大厂招聘经验的【资深职业导师】，正在为候选人深度优化简历中的【{section_name}】模块。
+
+                        ### 1. 核心输入
+                        - **目标岗位要求 (JD)**：{target_jd}
+                        - **本模块原始内容**：{section_content}
+                        - **文风倾向**：{opt_style}
+                        - **重构深度**：{detail_depth}
+
+                        ### 2. 处理逻辑分配 (重要)
+                        请首先判断【{section_name}】的内容属性：
+                        - **属性 A (叙述类经历)**：包含工作经历、实习经历、项目经历、志愿者活动等。
+                        - **属性 B (信息/列表类)**：包含基本信息、教育背景、技能证书、自我评价等。
+
+                        ---
+
+                        ### 3. 任务输出要求
+
+                        #### 如果属于【属性 A (叙述类经历)】：
+                        请严格执行 STAR+XYZ 规则进行重写，并输出以下三个部分：
+
+                        ##### 第一：属性A核心任务：输出【简历精修对比表】
+                        你必须输出一个 Markdown 表格，表格有且仅有三列，表格包含：【原始描述】、【优化建议 (含 [XX] 占位符)】、【优化逻辑】。
+
+                        ###### 🚨 强制排版规则 (杜绝散乱拆分)
+                         **一项目一行 (One Experience, One Row)**：
+                           - 严禁将同一家公司或同一个项目下的多条描述拆分成多行输出。
+                           - 必须将该项经历的所有原始描述合并在第一列的一个单元格内。
+                           - 必须将该项经历的所有优化建议合并在第二列的一个单元格内。
+
+                        ###### 🚨 每一列的“内容红线” (违者重罚)
+                        （1） **第一列【原始描述】**：
+                           - 必须原封不动复制用户提供的原始简历短句；
+                           - 不需要进行任何改写操作，不准在原文上下划线、删除线等修改，按照原文输出
+
+                        （2） **第二列【优化建议 (含 [XX] 占位符)】**：
+                           - **这是最重要的列！** 只能填写重构后的**简历正文**，禁止只输出标题，必须针对每一条经历给出重构后的长句。
+                           - 必须使用 STAR/XYZ 公式，分点陈述（如：1. 2. 3.）。
+                           - **严禁**在此列写任何解释性文字或理由。
+                           - **严禁幻觉**：禁止虚构任何公司名称、项目金额、具体百分比。
+                           - 示例：`1. 负责[XX]项目，通过[XX]工具提高效率[XX]%。<br>2. 协调[XX]人团队完成[XX]任务。`
+
+                        （3）**第三列【优化逻辑】**：
+                           - **只能填写“为什么要这么改”的解释。**
+                           - **严禁**在此列出现任何可以直接写进简历的描述性长句。
+                           - 示例：`量化了项目成果，突出了技术栈与 JD 的匹配度。
+
+
+                        ##### 第二：属性A格式参考：【简历精修对比表】输出模板参考
+                        | 原始描述 | 优化建议 (含 [XX] 占位符) | 优化逻辑 |
+                        | :--- | :--- | :--- |
+                        | 负责财务报表制作 | 1. 独立完成[XX]份月度财务报表编制。<br>2. 使用[XX]工具优化核算流程。 | 量化了工作量，体现了工具熟练度。 |
+                        ---
+
+                        #### 如果属于【属性 B (信息/列表类)】：
+                        ##### 第一：属性B核心任务：输出【简历精修对比表】
+                        你必须输出一个 Markdown 表格，表格有且仅有两列，表格包含：【原始描述】、【备注】
+
+                        ###### 🚨 每一列的“内容红线” (违者重罚)
+                        （1） **第一列【原始描述】**：
+                           - 必须原封不动复制用户提供的原始简历短句；
+                           - 不需要进行任何改写操作，不准在原文上下划线、删除线等修改，按照原文输出
+
+                        （2） **第二列【备注】**：
+                           - 在该列统一说明：简历中的学历及技能等信息基于事实出发填写，为保证信息真实性，不做修改润色。
+
+                        ##### 第二：属性B格式参考：【简历精修对比表】输出模板参考
+                        | 原始描述 | 备注 |
+                        | :--- | :--- |
+                        | 助理会计师资格证书（初级会计） | 简历中的学历及技能等信息基于事实出发填写，为保证信息真实性，不做修改润色。 |
+
+                        ---   
+
+
+                         ### 4. 基于“原始简历”的深度溯源提问 (严禁幻觉)
+                         请审视【原始简历内容】，找出其中描述模糊、缺乏数据、或能够进一步支撑 JD 的潜在点。
+                         请针对你在第一：核心任务：输出【简历精修对比表】中使用 **[XX]** 占位符的地方，向用户提出补全请求。
+                         **注意：** - 严禁基于你改写后的内容（如虚构的金额、比例）提问。
+                         - 必须针对原始经历中的模糊动词（如“负责、处理、协助”）进行追问。
+                         - 提问应引导用户回忆：具体的金额、具体的件数、具体的工具使用频率。
+                         - 列出 3-5 个针对原始事实的细节追问
+                        ---
+
+                        """
+
+                        try:
+                            module_res = call_ai_with_retry(client, "deepseek-chat",
+                                                            [{"role": "user", "content": specific_prompt}])
+                            refined_data[section_name] = module_res.choices[0].message.content
+                        except Exception as e:
+                            status.write(f"⚠️ 重构 {section_name} 失败: {e}")
+
+                        # 更新进度条
+                        current_step += 1
+                        progress_bar.progress(current_step / total_steps)
+
+                    # --- 第三阶段：生成全局总结 ---
+                    if refined_data:
+                        status.write("📝 正在生成全局求职策略建议...")
+                        all_refined = "\n".join(list(refined_data.values()))
+                        summary_prompt = f"针对以下精修后的内容，总结核心竞争力、面试建议并写一段100字自我评价：\n{all_refined[:2000]}"
+                        try:
+                            summary_res = call_ai_with_retry(client, "deepseek-chat",
+                                                             [{"role": "user", "content": summary_prompt}])
+                            final_summary = summary_res.choices[0].message.content
+                        except Exception as e:
+                            final_summary = f"总结生成失败，错误原因：{e}"
+
+                    # 最后将进度条拉满至 100%
+                    progress_bar.progress(1.0)
+
+                    if deduct_usage(user_code, amount=1.0):
+                        pass
+                    status.update(label="✅ 全量精修完成！（本次消耗1次额度）", state="complete", expanded=False)
+
+                st.session_state.refined_results = {
+                    "refined_data": refined_data,
+                    "competency_analysis": competency_analysis,
+                    "final_summary": final_summary
+                }
+                st.rerun()
+
+    # =========================================================
+    # 下方紧接着你的： # --- 结果展示与导出区 ---
 
  # --- 结果展示与导出区 ---
 if "refined_results" in st.session_state and st.session_state.refined_results:
@@ -801,7 +827,7 @@ st.info("💡 **小贴士**：优化建议中的 **[XX]** 是 AI 为你预留的
 
 # --- 6. 功能三：交互式 AI 助手 ---
 st.divider()
-st.subheader("💬 简历精修对话室")
+st.header("03 / 简历精修对话室")
 # 温馨提示
 st.info("💡 **计费说明**：对话模式每次提问消耗 **0.5** 次额度。")
 
