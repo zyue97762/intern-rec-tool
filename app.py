@@ -3,6 +3,8 @@ import pandas as pd
 import pdfplumber
 import json
 from openai import OpenAI
+import asyncio
+from openai import AsyncOpenAI
 import re
 from docx import Document
 from docx.shared import Pt
@@ -203,6 +205,81 @@ def call_ai_with_retry(client, model, messages, max_retries=3, delay=2):
                 continue
             raise e # 其他错误或重试耗尽则抛出
 
+
+async def async_call_ai_with_retry(client, model, messages, max_retries=3, delay=2):
+    """异步版本的重试函数"""
+    for i in range(max_retries):
+        try:
+            return await client.chat.completions.create(model=model, messages=messages)
+        except Exception as e:
+            if ("429" in str(e) or "rate_limit" in str(e).lower()) and i < max_retries - 1:
+                wait_time = delay * (2 ** i)
+                await asyncio.sleep(wait_time)
+                continue
+            raise e
+
+
+async def process_single_batch(batch, cv_text, batch_index, semaphore):
+    """处理单个批次的异步任务"""
+    async with semaphore:  # 限制最大并发数，防止被 DeepSeek 封号
+        prompt = f"""
+        你现在是一位拥有 15 年经验的资深招聘专家，擅长从复杂的简历中挖掘人才与岗位的深度契合点。
+
+        ### 评估背景
+        【候选人简历】：
+        {cv_text[:2500]}
+
+        【待匹配岗位列表】：
+        {json.dumps(batch, ensure_ascii=False)}
+
+        ### 你的任务
+        请基于以下逻辑框架，对简历与每个岗位进行深度匹配分析：
+
+        1. **核心技能匹配度**：对比简历中的技术栈（如 Python, SQL, 财务建模等）与 JD 的硬性要求。
+        2. **行业/项目相关性**：分析过往项目或实习经历在业务逻辑上是否与目标岗位一致。
+        3. **软实力与潜力**：从奖项、社团经历中评估候选人的学习能力和执行力。
+
+        ### 评分准则
+        - **90-100分**：完美匹配，几乎无需培训即可上手。
+        - **70-89分**：具备核心能力，但在特定经验或次要工具上略有欠缺。
+        - **50-69分**：有一定基础，但需要大量带教或转岗跨度较大。
+        - **50分以下**：基本不匹配。
+
+        ### 输出要求
+        请严格按 JSON 数组格式返回，不要包含任何前导语或总结语。格式如下：
+        [
+          {{
+            "index": 岗位索引号,
+            "match_score": 整数评分,
+            "match_reason": "【核心优势】：[列出1-2点最匹配的经历或技能]；【潜在挑战】：[指出简历中缺少的关键要素或不足]；【综合判定】：[一句话说明为什么值得投递]。"
+          }}
+        ]
+        """
+
+        try:
+            response = await async_call_ai_with_retry(
+                aclient,
+                "deepseek-chat",
+                [{"role": "user", "content": prompt}]
+            )
+
+            raw_content = response.choices[0].message.content.strip()
+            if raw_content.startswith("```json"):
+                raw_content = raw_content.replace("```json", "").replace("```", "").strip()
+            elif raw_content.startswith("```"):
+                raw_content = raw_content.replace("```", "").strip()
+
+            ai_res = json.loads(raw_content)
+
+            # 标准化返回格式
+            if isinstance(ai_res, list):
+                return ai_res, batch_index, None
+            elif isinstance(ai_res, dict):
+                return ai_res.get("results", ai_res.get("matches", list(ai_res.values())[0])), batch_index, None
+
+        except Exception as e:
+            return None, batch_index, str(e)
+
 # 将结果导出到word中
 def export_to_word(summary, analysis, refined_data):
     doc = Document()
@@ -345,7 +422,7 @@ with st.sidebar:
 
 # 初始化 AI 客户端 (统一使用 Secret)
 client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
-
+aclient = AsyncOpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 
 # --- 5. 功能区 ---
 st.header("01 / 岗位精准匹配")
@@ -427,88 +504,49 @@ if cv_file:
                 with pdfplumber.open(cv_file) as pdf:
                     cv_text = "".join([page.extract_text() for page in pdf.pages])
 
-                # 提取关键信息并转为字典列表
+                # 提取关键信息
                 jobs_list = jobs_to_eval[['职位名称', '职位描述', '任职要求']].reset_index().to_dict(orient='records')
 
-                # 设置分批参数
-                batch_size = 12  # 每次喂给 AI 12 个岗位，极其稳定
-                all_match_data = []  # 收集所有批次的结果
-
-                # 创建进度条组件
+                batch_size = 12
+                total_batches = (len(jobs_list) + batch_size - 1) // batch_size
                 progress_bar = st.progress(0)
 
-                # 核心：循环分批喂给 AI
-                for i in range(0, len(jobs_list), batch_size):
-                    batch = jobs_list[i:i + batch_size]
-                    current_batch_num = (i // batch_size) + 1
-                    total_batches = (len(jobs_list) + batch_size - 1) // batch_size
+                status.write(f"⏳ 正在将 {len(jobs_list)} 个岗位拆分为 {total_batches} 批次，启动并发解析...")
 
-                    status.write(
-                        f"⏳ 正在分析第 {current_batch_num}/{total_batches} 批岗位数据 (包含 {len(batch)} 个岗位)...")
 
-                    prompt = f"""
-                    你现在是一位拥有 15 年经验的资深招聘专家，擅长从复杂的简历中挖掘人才与岗位的深度契合点。
+                # 定义异步执行的主控中心
+                async def run_concurrent_batches():
+                    # 并发锁：最多同时向 DeepSeek 发起 3 个请求（这很关键，防止报错）
+                    semaphore = asyncio.Semaphore(3)
+                    tasks = []
 
-                    ### 评估背景
-                    【候选人简历】：
-                    {cv_text[:2500]}
+                    # 把所有的批次任务都打包好
+                    for i in range(0, len(jobs_list), batch_size):
+                        batch = jobs_list[i:i + batch_size]
+                        batch_index = i // batch_size
+                        tasks.append(process_single_batch(batch, cv_text, batch_index, semaphore))
 
-                    【待匹配岗位列表】：
-                    {json.dumps(batch, ensure_ascii=False)}
+                    all_match_data_temp = []
+                    completed_count = 0
 
-                    ### 你的任务
-                    请基于以下逻辑框架，对简历与每个岗位进行深度匹配分析：
+                    # 谁先完成，就先处理谁的数据，并更新进度条
+                    for future in asyncio.as_completed(tasks):
+                        res, b_idx, error = await future
+                        completed_count += 1
 
-                    1. **核心技能匹配度**：对比简历中的技术栈（如 Python, SQL, 财务建模等）与 JD 的硬性要求。
-                    2. **行业/项目相关性**：分析过往项目或实习经历在业务逻辑上是否与目标岗位一致。
-                    3. **软实力与潜力**：从奖项、社团经历中评估候选人的学习能力和执行力。
+                        if error:
+                            status.write(f"⚠️ 第 {b_idx + 1} 批解析出现小波动，已跳过。错误：{error}")
+                        elif res:
+                            all_match_data_temp.extend(res)
+                            status.write(f"✅ 第 {b_idx + 1} 批解析完成！")
 
-                    ### 评分准则
-                    - **90-100分**：完美匹配，几乎无需培训即可上手。
-                    - **70-89分**：具备核心能力，但在特定经验或次要工具上略有欠缺。
-                    - **50-69分**：有一定基础，但需要大量带教或转岗跨度较大。
-                    - **50分以下**：基本不匹配。
+                        progress_bar.progress(completed_count / total_batches)
 
-                    ### 输出要求
-                    请严格按 JSON 数组格式返回，不要包含任何前导语或总结语。格式如下：
-                    [
-                      {{
-                        "index": 岗位索引号,
-                        "match_score": 整数评分,
-                        "match_reason": "【核心优势】：[列出1-2点最匹配的经历或技能]；【潜在挑战】：[指出简历中缺少的关键要素或不足]；【综合判定】：[一句话说明为什么值得投递]。"
-                      }}
-                    ]
-                    """
+                    return all_match_data_temp
 
-                    try:
-                        response = call_ai_with_retry(
-                            client,
-                            "deepseek-chat",
-                            [{"role": "user", "content": prompt}]
-                        )
 
-                        raw_content = response.choices[0].message.content.strip()
-                        if raw_content.startswith("```json"):
-                            raw_content = raw_content.replace("```json", "").replace("```", "").strip()
-                        elif raw_content.startswith("```"):
-                            raw_content = raw_content.replace("```", "").strip()
-
-                        ai_res = json.loads(raw_content)
-
-                        # 合并当前批次结果
-                        if isinstance(ai_res, list):
-                            all_match_data.extend(ai_res)
-                        elif isinstance(ai_res, dict):
-                            all_match_data.extend(
-                                ai_res.get("results", ai_res.get("matches", list(ai_res.values())[0])))
-
-                    except Exception as e:
-                        status.write(f"⚠️ 第 {current_batch_num} 批解析出现小波动，已跳过。错误：{e}")
-                        continue  # 某一批失败不影响整体
-
-                    # 更新进度条
-                    progress = min((i + batch_size) / len(jobs_list), 1.0)
-                    progress_bar.progress(progress)
+                # 正式启动并发！
+                all_match_data = asyncio.run(run_concurrent_batches())
 
                 # --- 循环结束，处理所有结果 ---
                 if not all_match_data:
@@ -669,6 +707,7 @@ if cv_file is not None:
 
                         # 💡 注意：这里贴回你原本那个非常详细的 specific_prompt
                         # 工业级 Prompt 2.0：高稳定性、防幻觉、去废话
+                        # 工业级 Prompt 2.0：高稳定性、防幻觉、去废话 (加入 One-Shot 示例护航)
                         specific_prompt = f"""
                         你是一位拥有 15 年一线大厂招聘经验的【资深职业导师】。你的任务是针对候选人的具体经历，结合目标岗位需求，进行像素级的简历优化。
 
@@ -691,34 +730,43 @@ if cv_file is not None:
                         </INPUT_DATA>
 
                         <CRITICAL_RULES>
-                        1. **绝对客观（零幻觉）**：严禁虚构任何公司名称、项目金额、具体百分比或未提及的技术栈。遇到缺失的具体数据，必须使用 `[XX]` 作为占位符！
-                        2. **禁止废话（Zero-Chatter）**：直接输出最终的 Markdown 结果。绝不允许出现“好的”、“了解”、“这是为您优化的结果”等任何客套话！
-                        3. **Markdown 表格安全**：表格的单元格内**绝对禁止使用回车键换行**！如果需要分点陈述，必须且只能使用 `<br>` 标签（例如：`1. 第一点<br>2. 第二点`）。
+                        1. **绝对客观（零幻觉）**：严禁虚构任何数据、公司名称或未提及的技术栈。遇到缺失的具体数据，必须使用 `[XX]` 作为占位符！
+                        2. **禁止废话（Zero-Chatter）**：直接输出最终的 Markdown 结果。绝不允许出现“好的”、“这是为您优化的结果”等客套话！
+                        3. **严禁阉割工作细节（最高红线）**：原简历中的**所有具体动作描述必须保留并在“优化建议”列中扩写**！绝对不允许只提取公司名称或头衔而把具体干的活删掉！
+                        4. **Markdown 表格安全（致命红线）**：表格单元格内**绝对禁止使用回车键（\\n）**！无论是【原始描述】还是【优化建议】，只要需要换行或分点，**必须且只能使用 `<br>` 标签**（例：`1. 第一点<br>2. 第二点`）。
                         </CRITICAL_RULES>
 
                         <OUTPUT_FORMAT_INSTRUCTIONS>
-                        请根据 <CURRENT_SECTION_NAME> 的内容属性，选择唯一对应的输出路径（只输出一条路径的结果）：
+                        请根据 <CURRENT_SECTION_NAME> 的内容属性，选择唯一对应的输出路径：
 
-                        ▶ **路径 A：如果属于“叙述类经历”（如工作、实习、项目、校园经历等）**
-                        严格输出一个三列表格，以及一个追问模块。结构如下：
+                        ▶ **路径 A：属于“工作/实习/项目/校园经历”等包含具体动作的模块**
+                        严格输出一个三列表格，以及一个追问模块。
 
+                        🚨 **请务必严格参考以下【示例】的颗粒度和格式进行输出：**
+
+                        ### 【标准输出示例示范】
                         #### 🛠️ 简历精修对比表
                         | 原始描述 | 优化建议 (必须包含 [XX] 占位符引导补充数据) | 优化逻辑 |
                         | :--- | :--- | :--- |
-                        | (原封不动复制原句，严禁跨项目拆行) | (使用 STAR 法则重写，分点处用 <br> 隔开) | (解释这样改如何契合 JD 要求) |
+                        | 2024.02-02 XX事务所 实习生<br>• 填写底稿，运用函数核对资料<br>• 盘点现金 | **1. 业务执行：**独立负责 [XX] 家企业的审计底稿编制，运用 VLOOKUP/SUMIF 等函数处理 [XX] 万条财务数据，提升核对效率 [XX]%。<br>**2. 跨区协同：**跨部门对接 [XX] 位财务人员，完成核心资料核验。<br>**3. 资产清查：**规范执行库存现金盘点，排查并解决 [XX] 笔账目差异。 | 将日常动作转化为“业务成果+数据量化”，突显 Excel 数据处理能力，完美契合 JD 中的“财务分析核对”要求。 |
+
+                        ### 【请按以下格式输出你的实际生成结果】
+                        #### 🛠️ 简历精修对比表
+                        | 原始描述 | 优化建议 (必须包含 [XX] 占位符引导补充数据) | 优化逻辑 |
+                        | :--- | :--- | :--- |
+                        | (将原内容填入，原本所有的换行必须替换为 <br> 标签) | (使用 XYZ 公式深度重写每一条经历，换行必须用 <br>) | (解释这样改如何契合 JD 要求) |
 
                         #### 🔍 深度溯源追问 (引导候选人填补 [XX])
-                        (列出 3-5 个具体、尖锐的问题，针对性地引导候选人回忆能支撑 JD 的具体数据、规模或动作细节，严禁基于你改写的占位符进行无效提问。)
-
+                        (列出 3-5 个具体、尖锐的问题，针对性地引导候选人回忆能支撑 JD 的具体数据、规模或动作细节。)
                         ---
 
-                        ▶ **路径 B：如果属于“信息/列表类”（如基本信息、教育背景、技能证书等）**
+                        ▶ **路径 B：属于“基本信息/教育背景/技能证书”等纯客观列表模块**
                         此类信息属于客观事实，严禁过度包装。严格输出一个两列表格：
 
                         #### 🛠️ 信息规范审查表
                         | 原始描述 | 专家备注 |
                         | :--- | :--- |
-                        | (原封不动复制原句) | (例如：“客观学历/证书信息已保留”、“建议将技能按熟练度分类”等) |
+                        | (原封不动复制原句，换行替换为 <br>) | (例如：“客观学历信息已保留”、“建议将技能按熟练度分类”等) |
                         </OUTPUT_FORMAT_INSTRUCTIONS>
 
                         请立即开始执行，只输出最终的 Markdown 代码：
