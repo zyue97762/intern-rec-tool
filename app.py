@@ -99,25 +99,34 @@ def apply_custom_design():
 # --- 1. 页面基本配置 ---
 st.set_page_config(page_title=" 暑期实习求职利器", layout="wide", initial_sidebar_state="expanded")
 
-# --- 替换为你新的 Hero Section ---
 # --- 现代 SaaS 风 Hero Section ---
 st.markdown("""
-<div style="
-    background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
-    border: 1px solid #C7D2FE;
-    padding: 40px;
-    border-radius: 16px;
+<style>
+/* 背景流体变幻动画 */
+@keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+/* 卡片上下悬浮动画 */
+@keyframes floatBox { 0% { transform: translateY(0px); } 50% { transform: translateY(-8px); } 100% { transform: translateY(0px); } }
+
+.fluid-hero-soft {
+    /* 背景色保持你喜欢的流体紫 */
+    background: linear-gradient(-45deg, #EEF2FF, #E0E7FF, #C7D2FE, #818CF8, #EEF2FF);
+    background-size: 300% 300%;
+    animation: gradientShift 10s ease infinite, floatBox 6s ease-in-out infinite;
+    padding: 45px 50px;
+
+    /* 核心修改 1：更大的圆角，削弱“矩形”感 */
+    border-radius: 32px; 
+
+    /* 核心修改 2：彻底去掉实线边框 */
+    border: none; 
+
+    /* 核心修改 3：超柔和的紫色弥散光 (外阴影) + 边缘向内渐隐的白色融合光 (内阴影) */
+    box-shadow: 0 24px 50px -12px rgba(129, 140, 248, 0.25), inset 0 0 30px rgba(255, 255, 255, 0.6);
     margin-bottom: 30px;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
-">
-    <h1 style="color: #312E81 !important; margin-top: 0; font-size: 2.2rem; font-weight: 800; border: none;">
-        ✨ 职场之星：求职竞争力引擎
-    </h1>
-    <p style="color: #4338CA; font-size: 1.1rem; margin-top: 10px; max-width: 650px; line-height: 1.6;">
-        大厂实习简历总是石沉大海？让我们用 AI 深度解析你的职场基因，把平庸的描述转化为让面试官眼前一亮的“必杀技”。
-    </p>
-</div>
-""", unsafe_allow_html=True)
+}
+</style>
+""" + """<div class="fluid-hero-soft"><h1 style="color: #312E81 !important; margin-top: 0; font-size: 2.3rem; font-weight: 800; border: none;">✨ 职场之星：求职竞争力引擎</h1><p style="color: #4338CA; font-size: 1.15rem; margin-top: 15px; max-width: 700px; line-height: 1.7;">大厂实习简历总是石沉大海？让我们用 AI 深度解析你的职场基因，把平庸的描述转化为让面试官眼前一亮的“必杀技”。</p></div>""",
+            unsafe_allow_html=True)
 
 apply_custom_design()  # 调用美容函数
 
@@ -437,6 +446,7 @@ except:
     st.stop()
 
 cv_file = st.file_uploader("上传你的简历 (PDF)", type=["pdf"])
+st.info("⚠️ 温馨提示：为了保证 AI 提取准确率，请务必上传由 Word 或纯文本直接导出的 PDF。暂不支持由图片转换的扫描件哦！")
 
 if cv_file:
 
@@ -491,7 +501,7 @@ if cv_file:
     st.write(f"📊 筛选后符合要求的岗位：**{len(filtered_df)}** 个")
     st.dataframe(filtered_df.head(50), use_container_width=True)  # 预览前50条
 
-    if st.button("🔥 开始 AI 智能匹配(消耗1额度)"):
+    if st.button("🔥 开始 AI 智能匹配(消耗3额度，耗时3-5分钟)"):
         if filtered_df.empty:
             st.error("筛选后没有符合要求的岗位，请放宽筛选条件。")
         else:
@@ -570,11 +580,11 @@ if cv_file:
                                                        c not in ['匹配分数', '匹配依据', 'index']]
                     final_df = final_df[cols].sort_values(by='匹配分数', ascending=False)
 
-                    if deduct_usage(user_code, amount=1.0):
+                    if deduct_usage(user_code, amount=3.0):
                         pass
 
                     st.session_state.match_results = final_df
-                    status.update(label="✅ 匹配完成！已按匹配度降序排列(本次消耗 1 次额度)", state="complete",
+                    status.update(label="✅ 匹配完成！已按匹配度降序排列(本次消耗 3 次额度)", state="complete",
                                   expanded=False)
                 else:
                     st.error("AI 返回的数据缺少 index 字段合并失败。")
@@ -626,19 +636,26 @@ if cv_file is not None:
             st.success("✅ 已从 PDF 自动识别模块，可在此微调：")
 
             for sec_name, sec_content in auto_sections.items():
-                final_sections[sec_name] = st.text_area(f"模块：{sec_name}", value=sec_content, height=150,
-                                                        key=f"auto_{sec_name}")
+                final_sections[sec_name] = st.text_area(
+                    sec_name,
+                    value=sec_content,
+                    height=150,
+                    key=f"auto_{sec_name}_{cv_file.name}"  # ✨ 动态身份证号
+                )
 
         with input_tab2:
             st.caption("如果自动提取不准，可在此手动覆盖粘贴：")
             manual_sections = {
-                "工作经历": st.text_area("工作/实习经历", placeholder="例如：2022.01-2023.01 XX公司 实习生\n1. 负责...",
+                "基本信息": st.text_area("基本信息", placeholder="例如：张三，电话，邮箱，武汉大学...", height=100),
+                "工作经历": st.text_area("工作经历", placeholder="例如：2022.01-2023.01 XX公司 实习生\n1. 负责...",
                                          height=150),
                 "项目经历": st.text_area("项目经历", placeholder="例如：XX数据分析项目\n使用Python进行...", height=150),
-                "教育与技能": st.text_area("教育背景、技能及证书", placeholder="例如：英语六级、Python熟练...", height=100)
+                "技能证书": st.text_area("技能证书", placeholder="例如：英语六级、Python熟练、CPA...", height=100)
             }
-            if any(manual_sections.values()):
-                final_sections = {k: v for k, v in manual_sections.items() if v.strip()}
+            # 【核心修改】：智能合并逻辑
+            for k, v in manual_sections.items():
+                if v.strip():  # 判断：如果用户在这个框里输入了有效文字
+                    final_sections[k] = v  # 就把这个模块的内容存进 final_sections，覆盖或者新增
 
         # ================= 右侧栏：输入目标 JD =================
     with col_right:
@@ -654,7 +671,7 @@ if cv_file is not None:
 
 
         # 仅仅在这里获取按钮的点击状态，但不在这里执行逻辑！
-        start_btn_clicked = st.button("🪄 启动专家级精修（消耗1额度）", use_container_width=True)
+        start_btn_clicked = st.button("🪄 启动专家级精修（消耗3额度，耗时3-5分钟）", use_container_width=True)
 
         # ================= 🚀 全局全宽进度区 (放在左右分栏之外) =================
         # 【修改点 2】：把处理逻辑移到 col_left 和 col_right 的外面，这样它就会撑满全屏
@@ -735,6 +752,8 @@ if cv_file is not None:
                         3. **严禁阉割工作细节（最高红线）**：原简历中的**所有具体动作描述必须保留并在“优化建议”列中扩写**！绝对不允许只提取公司名称或头衔而把具体干的活删掉！
                         4. **Markdown 表格安全（致命红线）**：表格单元格内**绝对禁止使用回车键（\\n）**！无论是【原始描述】还是【优化建议】，只要需要换行或分点，**必须且只能使用 `<br>` 标签**（例：`1. 第一点<br>2. 第二点`）。
                         </CRITICAL_RULES>
+                        5.格式禁令：严禁输出任何形式的删除线（包括 ~~、<s>、<strike>）。
+                        6.1:1 镜像存证：左侧“原始描述”列仅允许进行“换行符转 <br>”的操作，严禁对文字内容进行任何增删改，严禁标注哪些是“旧的”。
 
                         <OUTPUT_FORMAT_INSTRUCTIONS>
                         请根据 <CURRENT_SECTION_NAME> 的内容属性，选择唯一对应的输出路径：
@@ -754,7 +773,7 @@ if cv_file is not None:
                         #### 🛠️ 简历精修对比表
                         | 原始描述 | 优化建议 (必须包含 [XX] 占位符引导补充数据) | 优化逻辑 |
                         | :--- | :--- | :--- |
-                        | (将原内容填入，原本所有的换行必须替换为 <br> 标签) | (使用 XYZ 公式深度重写每一条经历，换行必须用 <br>) | (解释这样改如何契合 JD 要求) |
+                        | (将原内容填入，此处仅允许复制，原本所有的换行必须替换为 <br> 标签) | (使用 XYZ 公式深度重写每一条经历，换行必须用 <br>) | (解释这样改如何契合 JD 要求) |
 
                         #### 🔍 深度溯源追问 (引导候选人填补 [XX])
                         (列出 3-5 个具体、尖锐的问题，针对性地引导候选人回忆能支撑 JD 的具体数据、规模或动作细节。)
@@ -775,7 +794,13 @@ if cv_file is not None:
                         try:
                             module_res = call_ai_with_retry(client, "deepseek-chat",
                                                             [{"role": "user", "content": specific_prompt}])
-                            refined_data[section_name] = module_res.choices[0].message.content
+                            raw_output = module_res.choices[0].message.content
+
+                            # 【核心修正】：升级正则，拦截 ~~, <s>, <strike>, <del> 以及单波浪线 ~
+                            # 增加对 HTML 标签的拦截，因为你开启了 unsafe_allow_html=True
+                            clean_output = re.sub(r'~~|~|<s>|</s>|<strike>|</strike>|<del>|</del>', '', raw_output)
+
+                            refined_data[section_name] = clean_output
                         except Exception as e:
                             status.write(f"⚠️ 重构 {section_name} 失败: {e}")
 
@@ -798,9 +823,9 @@ if cv_file is not None:
                     # 最后将进度条拉满至 100%
                     progress_bar.progress(1.0)
 
-                    if deduct_usage(user_code, amount=1.0):
+                    if deduct_usage(user_code, amount=3.0):
                         pass
-                    status.update(label="✅ 全量精修完成！（本次消耗1次额度）", state="complete", expanded=False)
+                    status.update(label="✅ 全量精修完成！（本次消耗3次额度）", state="complete", expanded=False)
 
                 st.session_state.refined_results = {
                     "refined_data": refined_data,
@@ -842,49 +867,51 @@ if "refined_results" in st.session_state and st.session_state.refined_results:
         with tabs[i]:
             st.markdown(content, unsafe_allow_html=True)
 
-st.info("💡 **小贴士**：优化建议中的 **[XX]** 是 AI 为你预留的数据位")
+    st.info("💡 **小贴士**：优化建议中的 **[XX]** 是 AI 为你预留的数据位")
 
 # --- 6. 功能三：交互式 AI 助手 ---
-st.divider()
-st.header("03 / 简历精修对话室")
-# 温馨提示
-st.info("💡 **计费说明**：对话模式每次提问消耗 **0.5** 次额度。")
+# 🌟 核心修改：加了这个判断，只有上传简历后才显示 03 模块
+if cv_file is not None:
+    st.divider()
+    st.header("03 / 简历精修对话室")
+    # 温馨提示
+    st.info("💡 **计费说明**：对话模式每次提问消耗 **1** 次额度。")
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
-# 显示聊天历史
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+    # 显示聊天历史
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
 
-# 聊天输入框
-if chat_input := st.chat_input("针对优化结果，你可以继续追问"):
+    # 聊天输入框
+    if chat_input := st.chat_input("针对优化结果，你可以继续追问"):
 
-    # 1. 检查余额 (保持不变)
-    current_u = st.session_state.get("user_info")
-    if current_u['Used_Count'] >= current_u['Total_Count']:
-        st.warning("⚠️ 您的额度已耗尽，请联系管理员续费后再对话。")
-        st.stop()
+        # 1. 检查余额 (保持不变)
+        current_u = st.session_state.get("user_info")
+        if current_u['Used_Count'] >= current_u['Total_Count']:
+            st.warning("⚠️ 您的额度已耗尽，请联系管理员续费后再对话。")
+            st.stop()
 
-    # 2. 【核心修改】构建上下文背景
-    # 尝试从之前的步骤中抓取数据
-    context_info = ""
+        # 2. 【核心修改】构建上下文背景
+        # 尝试从之前的步骤中抓取数据
+        context_info = ""
 
-    # 获取 JD
-    current_jd = target_jd if 'target_jd' in locals() else "未提供"
+        # 获取 JD
+        current_jd = target_jd if 'target_jd' in locals() else "未提供"
 
-    # 获取之前的精修建议
-    refined_summary = ""
-    if "refined_results" in st.session_state and st.session_state.refined_results:
-        res = st.session_state.refined_results
-        refined_summary = f"你之前给出的优化策略是：{res['final_summary']}\n"
-        # 也可以把各模块的精修点简要带入
-        for sec, content in res['refined_data'].items():
-            refined_summary += f"--- {sec} 模块优化建议 ---\n{content[:500]}...\n"
+        # 获取之前的精修建议
+        refined_summary = ""
+        if "refined_results" in st.session_state and st.session_state.refined_results:
+            res = st.session_state.refined_results
+            refined_summary = f"你之前给出的优化策略是：{res['final_summary']}\n"
+            # 也可以把各模块的精修点简要带入
+            for sec, content in res['refined_data'].items():
+                refined_summary += f"--- {sec} 模块优化建议 ---\n{content[:500]}...\n"
 
-    # 构建一个强大的 System Message
-    system_prompt = f"""你是一个资深简历优化专家。
+        # 构建一个强大的 System Message
+        system_prompt = f"""你是一个资深简历优化专家。
 你正在协助用户进行简历修饰。以下是当前任务的背景信息，请务必基于这些信息回答用户的追问：
 
 【目标岗位 JD】：
@@ -895,32 +922,32 @@ if chat_input := st.chat_input("针对优化结果，你可以继续追问"):
 
 请根据以上背景，结合用户的具体提问，给出针对性、专业且简洁的修改建议。"""
 
-    # 3. 展示并记录用户消息
-    st.session_state.messages.append({"role": "user", "content": chat_input})
-    with st.chat_message("user"):
-        st.markdown(chat_input)
+        # 3. 展示并记录用户消息
+        st.session_state.messages.append({"role": "user", "content": chat_input})
+        with st.chat_message("user"):
+            st.markdown(chat_input)
 
-    # 4. AI 响应
-    with st.chat_message("assistant"):
-        with st.spinner("专家正在思考中..."):
-            try:
-                # 【核心修改】将 system_prompt 作为第一条消息发送
-                full_messages = [{"role": "system", "content": system_prompt}] + st.session_state.messages
+        # 4. AI 响应
+        with st.chat_message("assistant"):
+            with st.spinner("专家正在思考中..."):
+                try:
+                    # 【核心修改】将 system_prompt 作为第一条消息发送
+                    full_messages = [{"role": "system", "content": system_prompt}] + st.session_state.messages
 
-                response = call_ai_with_retry(
-                    client,
-                    "deepseek-chat",
-                    full_messages
-                )
-                ans = response.choices[0].message.content
-                st.markdown(ans)
+                    response = call_ai_with_retry(
+                        client,
+                        "deepseek-chat",
+                        full_messages
+                    )
+                    ans = response.choices[0].message.content
+                    st.markdown(ans)
 
-                # 5. 成功后执行扣费 (保持不变)
-                if deduct_usage(user_code, amount=0.5):
-                    st.toast(f"已消耗 0.5 次额度", icon="💰")
+                    # 5. 成功后执行扣费
+                    if deduct_usage(user_code, amount=1.0):
+                        st.toast(f"已消耗 1 次额度", icon="💰")
 
-                st.session_state.messages.append({"role": "assistant", "content": ans})
+                    st.session_state.messages.append({"role": "assistant", "content": ans})
 
-            except Exception as e:
-                st.error(f"对话中断，请重试。错误信息：{e}")
+                except Exception as e:
+                    st.error(f"对话中断，请重试。错误信息：{e}")
 
