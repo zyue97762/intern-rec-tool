@@ -125,7 +125,7 @@ st.markdown("""
     margin-bottom: 30px;
 }
 </style>
-""" + """<div class="fluid-hero-soft"><h1 style="color: #312E81 !important; margin-top: 0; font-size: 2.3rem; font-weight: 800; border: none;">✨ 职场之星：求职竞争力引擎</h1><p style="color: #4338CA; font-size: 1.15rem; margin-top: 15px; max-width: 700px; line-height: 1.7;">大厂实习简历总是石沉大海？让我们用 AI 深度解析你的职场基因，把平庸的描述转化为让面试官眼前一亮的“必杀技”。</p></div>""",
+""" + """<div class="fluid-hero-soft"><h1 style="color: #312E81 !important; margin-top: 0; font-size: 2.3rem; font-weight: 800; border: none;">✨ 求职之星：求职竞争力引擎</h1><p style="color: #4338CA; font-size: 1.15rem; margin-top: 15px; max-width: 700px; line-height: 1.7;">大厂实习简历总是石沉大海？让我们用 AI 深度解析你的职场基因，把平庸的描述转化为让面试官眼前一亮的“必杀技”。</p></div>""",
             unsafe_allow_html=True)
 
 apply_custom_design()  # 调用美容函数
@@ -331,7 +331,7 @@ def split_resume_by_sections(text):
     """
     # 定义常见的简历标题关键词
     patterns = {
-        "工作经历": r"(工作经历|实习|实习经历|Experience|Work)",
+        "工作经历": r"(工作经验|工作经历|实习|实习经历|Experience|Work)",
         "项目经历": r"(项目经历|项目经验|个人项目|Projects)",
         "技能证书": r"(专业技能|技能特长|语言能力|证书|Skills)",
         "自我评价": r"(自我评价|个人总结|About Me)"
@@ -440,7 +440,7 @@ st.header("01 / 岗位精准匹配")
 try:
     df = conn.read(spreadsheet=SQL_SHEET_URL, worksheet="jobs", ttl=600)
     # 变成一行浅灰色的细小提示，并展示岗位总数，增加产品的“厚重感”
-    st.caption(f"🟢 岗位数据中心已就绪 | 实时在库岗位：{len(df)} 个")
+    st.caption(f"🟢 岗位数据中心已就绪")
 except:
     st.error("无法同步岗位库，请检查表格名称是否为 'jobs'")
     st.stop()
