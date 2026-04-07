@@ -458,23 +458,23 @@ if cv_file:
     with st.container(border=True):
         row1_col1, row1_col2, row1_col3 = st.columns(3)
         with row1_col1:
-            category_list = df['领域大类'].dropna().unique().tolist() if '领域大类' in df.columns else []
-            sel_category = st.multiselect("领域大类", options=category_list)
+            category_list = df['岗位类别'].dropna().unique().tolist() if '岗位类别' in df.columns else []
+            sel_category = st.multiselect("岗位类别", options=category_list)
         with row1_col2:
-            field_list = df['实习领域'].dropna().unique().tolist() if '实习领域' in df.columns else []
-            sel_field = st.multiselect("实习领域", options=field_list)
+            field_list = df['行业'].dropna().unique().tolist() if '行业' in df.columns else []
+            sel_field = st.multiselect("行业", options=field_list)
         with row1_col3:
-            city_list = df['工作地点'].dropna().unique().tolist() if '工作地点' in df.columns else []
-            sel_cities = st.multiselect("工作地点", options=city_list)
+            city_list = df['城市'].dropna().unique().tolist() if '城市' in df.columns else []
+            sel_cities = st.multiselect("城市", options=city_list)
 
     # 【修改】第二排筛选条件：实习时长、转正机会、学历要求
         row2_col1, row2_col2, row2_col3 = st.columns(3)
         with row2_col1:
-            month_list = df['实习月数'].dropna().unique().tolist() if '实习月数' in df.columns else []
-            sel_months = st.multiselect("实习时长 (月数)", options=month_list)
+            month_list = df['实习时长'].dropna().unique().tolist() if '实习时长' in df.columns else []
+            sel_months = st.multiselect("实习时长", options=month_list)
         with row2_col2:
-            convert_list = df['转正机会'].dropna().unique().tolist() if '转正机会' in df.columns else []
-            sel_convert = st.multiselect("转正机会", options=convert_list)
+            convert_list = df['每周天数'].dropna().unique().tolist() if '每周天数' in df.columns else []
+            sel_convert = st.multiselect("每周天数", options=convert_list)
         with row2_col3:
             edu_list = df['学历要求'].dropna().unique().tolist() if '学历要求' in df.columns else []
             sel_edu = st.multiselect("学历要求", options=edu_list)
@@ -482,15 +482,15 @@ if cv_file:
     # 执行 Python 过滤逻辑
     filtered_df = df.copy()
     if sel_category:
-        filtered_df = filtered_df[filtered_df['领域大类'].isin(sel_category)]
+        filtered_df = filtered_df[filtered_df['岗位类别'].isin(sel_category)]
     if sel_field:
-        filtered_df = filtered_df[filtered_df['实习领域'].isin(sel_field)]
+        filtered_df = filtered_df[filtered_df['行业'].isin(sel_field)]
     if sel_cities:
-        filtered_df = filtered_df[filtered_df['工作地点'].isin(sel_cities)]
+        filtered_df = filtered_df[filtered_df['城市'].isin(sel_cities)]
     if sel_months:
-        filtered_df = filtered_df[filtered_df['实习月数'].isin(sel_months)]
+        filtered_df = filtered_df[filtered_df['实习时长'].isin(sel_months)]
     if sel_convert:
-        filtered_df = filtered_df[filtered_df['转正机会'].isin(sel_convert)]
+        filtered_df = filtered_df[filtered_df['每周天数'].isin(sel_convert)]
     # 【新增】学历要求过滤
     if sel_edu:
         filtered_df = filtered_df[filtered_df['学历要求'].isin(sel_edu)]
@@ -515,7 +515,7 @@ if cv_file:
                     cv_text = "".join([page.extract_text() for page in pdf.pages])
 
                 # 提取关键信息
-                jobs_list = jobs_to_eval[['职位名称', '职位描述', '任职要求']].reset_index().to_dict(orient='records')
+                jobs_list = jobs_to_eval[['岗位名称','职位描述']].reset_index().to_dict(orient='records')
 
                 batch_size = 12
                 total_batches = (len(jobs_list) + batch_size - 1) // batch_size
