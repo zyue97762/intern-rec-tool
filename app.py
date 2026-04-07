@@ -247,6 +247,7 @@ async def process_single_batch(batch, cv_text, batch_index, semaphore):
         1. **核心技能匹配度**：对比简历中的技术栈（如 Python, SQL, 财务建模等）与 JD 的硬性要求。
         2. **行业/项目相关性**：分析过往项目或实习经历在业务逻辑上是否与目标岗位一致。
         3. **软实力与潜力**：从奖项、社团经历中评估候选人的学习能力和执行力。
+        4. **学历/岗位要求**：分析岗位工作要求或学历要求相较于候选人条件是否存在较大差距（如一个专科及以上学历要求的岗位对于一个研究生学历的候选人来说可能不具备价值）
 
         ### 评分准则
         - **90-100分**：完美匹配，几乎无需培训即可上手。
@@ -515,7 +516,7 @@ if cv_file:
                     cv_text = "".join([page.extract_text() for page in pdf.pages])
 
                 # 提取关键信息
-                jobs_list = jobs_to_eval[['岗位名称','职位描述']].reset_index().to_dict(orient='records')
+                jobs_list = jobs_to_eval[['岗位名称','学历要求','职位描述']].reset_index().to_dict(orient='records')
 
                 batch_size = 12
                 total_batches = (len(jobs_list) + batch_size - 1) // batch_size
